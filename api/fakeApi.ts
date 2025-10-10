@@ -204,6 +204,8 @@ let files: ProjFile[] = [
     url: 'https://example.com/files/cerere-1.pdf',
     tag: 'cerere',
     size: 245000,
+    mime_type: 'application/pdf',
+    uploader: 'Andrei Ionescu',
     created_at: '2025-01-05T10:15:00Z',
   },
   {
@@ -213,6 +215,8 @@ let files: ProjFile[] = [
     url: 'https://example.com/files/contract-1.pdf',
     tag: 'contract',
     size: 512000,
+    mime_type: 'application/pdf',
+    uploader: 'Maria Popescu',
     created_at: '2025-01-06T14:30:00Z',
   },
   {
@@ -222,6 +226,8 @@ let files: ProjFile[] = [
     url: 'https://example.com/files/desen-1.dwg',
     tag: 'desen',
     size: 1024000,
+    mime_type: 'application/acad',
+    uploader: 'Ion Vasile',
     created_at: '2025-01-07T09:00:00Z',
   },
   {
@@ -231,7 +237,20 @@ let files: ProjFile[] = [
     url: 'https://example.com/files/poze-3.zip',
     tag: 'poza',
     size: 5120000,
+    mime_type: 'application/zip',
+    uploader: 'Andrei Ionescu',
     created_at: '2024-12-10T10:00:00Z',
+  },
+  {
+    id: '5',
+    project_id: '1',
+    name: 'Imagine balustradă referință.jpg',
+    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+    tag: 'poza',
+    size: 856000,
+    mime_type: 'image/jpeg',
+    uploader: 'Maria Popescu',
+    created_at: '2025-01-08T11:00:00Z',
   },
 ];
 
@@ -575,6 +594,8 @@ export const fakeApi = {
         url: input.url,
         tag: input.tag,
         size: input.size,
+        mime_type: input.mime_type,
+        uploader: input.uploader,
         created_at: new Date().toISOString(),
       };
       

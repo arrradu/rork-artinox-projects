@@ -8,12 +8,28 @@ import {
   Modal,
   ScrollView,
   Alert,
+  Image,
+  Linking,
+  Platform,
+  ActionSheetIOS,
 } from 'react-native';
-import { FileText, Plus, X, ExternalLink } from 'lucide-react-native';
+import { 
+  FileText, 
+  Plus, 
+  X, 
+  FileImage, 
+  FileSpreadsheet, 
+  FileCode, 
+  Archive, 
+  File as FileIcon,
+  MoreVertical,
+  ExternalLink,
+} from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useFilesByProjectId, useApp } from '@/contexts/AppContext';
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
-import type { FileTag } from '@/types';
+import type { FileTag, ProjFile } from '@/types';
 
 interface FilesTabProps {
   projectId: string;
@@ -42,15 +58,96 @@ function formatFileSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getFileExtension(filename: string): string {
+  const parts = filename.split('.');
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+function getFileIcon(mimeType?: string, filename?: string) {
+  if (mimeType?.startsWith('image/')) {
+    return FileImage;
+  }
+  if (mimeType === 'application/pdf') {
+    return FileText;
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    mimeType === 'application/msword'
+  ) {
+    return FileText;
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel'
+  ) {
+    return FileSpreadsheet;
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    mimeType === 'application/vnd.ms-powerpoint'
+  ) {
+    return FileCode;
+  }
+  if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed') {
+    return Archive;
+  }
+  
+  const ext = filename ? getFileExtension(filename) : '';
+  if (['dwg', 'dxf', 'dwf'].includes(ext)) {
+    return FileCode;
+  }
+  
+  return FileIcon;
+}
+
+function formatDate(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Acum';
+  if (diffMins < 60) return `${diffMins} min`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 7) return `${diffDays}z`;
+  
+  return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+}
+
 export default function FilesTab({ projectId }: FilesTabProps) {
   const files = useFilesByProjectId(projectId);
-  const { createFile } = useApp();
+  const { createFile, deleteFile, currentUser } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<ProjFile | null>(null);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [tag, setTag] = useState<FileTag>('altul');
-  const [size, setSize] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const detectMimeType = (filename: string): string => {
+    const ext = getFileExtension(filename);
+    const mimeTypes: Record<string, string> = {
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ppt: 'application/vnd.ms-powerpoint',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      zip: 'application/zip',
+      dwg: 'application/acad',
+      dxf: 'application/dxf',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+  };
 
   const handleAddFile = async () => {
     if (!name.trim() || !url.trim()) {
@@ -60,18 +157,19 @@ export default function FilesTab({ projectId }: FilesTabProps) {
 
     setLoading(true);
     try {
+      const mimeType = detectMimeType(name);
       await createFile({
         project_id: projectId,
         name: name.trim(),
         url: url.trim(),
         tag,
-        size: size ? parseInt(size, 10) : undefined,
+        mime_type: mimeType,
+        uploader: currentUser.name,
       });
       
       setName('');
       setUrl('');
       setTag('altul');
-      setSize('');
       setModalVisible(false);
     } catch (error) {
       console.error('Error creating file:', error);
@@ -79,6 +177,124 @@ export default function FilesTab({ projectId }: FilesTabProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFilePress = async (file: ProjFile) => {
+    console.log('File pressed:', file.name, file.mime_type);
+
+    if (file.mime_type?.startsWith('image/')) {
+      setSelectedFile(file);
+      setPreviewModalVisible(true);
+      return;
+    }
+
+    if (file.mime_type === 'application/pdf') {
+      try {
+        await WebBrowser.openBrowserAsync(file.url);
+      } catch (error) {
+        console.error('Error opening PDF:', error);
+        Alert.alert('Eroare', 'Nu s-a putut deschide fișierul PDF');
+      }
+      return;
+    }
+
+    if (
+      file.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.mime_type === 'application/msword' ||
+      file.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.mime_type === 'application/vnd.ms-excel' ||
+      file.mime_type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      file.mime_type === 'application/vnd.ms-powerpoint'
+    ) {
+      try {
+        const supported = await Linking.canOpenURL(file.url);
+        if (supported) {
+          await Linking.openURL(file.url);
+        } else {
+          Alert.alert(
+            'Deschide fișier',
+            'Doriți să deschideți acest fișier în browser?',
+            [
+              { text: 'Anulează', style: 'cancel' },
+              { text: 'Deschide', onPress: () => WebBrowser.openBrowserAsync(file.url) },
+            ]
+          );
+        }
+      } catch (error) {
+        console.error('Error opening file:', error);
+        Alert.alert('Eroare', 'Nu s-a putut deschide fișierul');
+      }
+      return;
+    }
+
+    Alert.alert(
+      file.name,
+      'Alegeți o acțiune',
+      [
+        { text: 'Anulează', style: 'cancel' },
+        { text: 'Deschide în browser', onPress: () => WebBrowser.openBrowserAsync(file.url) },
+      ]
+    );
+  };
+
+  const handleFileMenu = (file: ProjFile) => {
+    const canDelete = currentUser.name === file.uploader || currentUser.role === 'admin';
+    
+    if (Platform.OS === 'ios') {
+      const options = ['Anulează', 'Distribuie', 'Deschide'];
+      if (canDelete) options.push('Șterge');
+      
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          destructiveButtonIndex: canDelete ? options.length - 1 : undefined,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            Alert.alert('Distribuie', 'Funcționalitate în dezvoltare');
+          } else if (buttonIndex === 2) {
+            handleFilePress(file);
+          } else if (buttonIndex === 3 && canDelete) {
+            handleDeleteFile(file);
+          }
+        }
+      );
+    } else {
+      const buttons: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
+        { text: 'Anulează', style: 'cancel' },
+        { text: 'Distribuie', onPress: () => Alert.alert('Distribuie', 'Funcționalitate în dezvoltare') },
+        { text: 'Deschide', onPress: () => handleFilePress(file) },
+      ];
+      
+      if (canDelete) {
+        buttons.push({ text: 'Șterge', onPress: () => handleDeleteFile(file), style: 'destructive' });
+      }
+      
+      Alert.alert(file.name, 'Alegeți o acțiune', buttons);
+    }
+  };
+
+  const handleDeleteFile = (file: ProjFile) => {
+    Alert.alert(
+      'Șterge fișier',
+      `Sigur doriți să ștergeți "${file.name}"?`,
+      [
+        { text: 'Anulează', style: 'cancel' },
+        {
+          text: 'Șterge',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteFile(file.id);
+            } catch (error) {
+              console.error('Error deleting file:', error);
+              Alert.alert('Eroare', 'Nu s-a putut șterge fișierul');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (files.length === 0) {
@@ -155,16 +371,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
                     </TouchableOpacity>
                   ))}
                 </View>
-
-                <Text style={styles.label}>Mărime (bytes, opțional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={size}
-                  onChangeText={setSize}
-                  placeholder="ex: 512000"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                />
               </ScrollView>
 
               <View style={styles.modalFooter}>
@@ -201,40 +407,72 @@ export default function FilesTab({ projectId }: FilesTabProps) {
         <Text style={styles.addButtonText}>Adaugă fișier</Text>
       </TouchableOpacity>
 
-      <View style={styles.filesList}>
-        {files.map((file) => (
-          <View key={file.id} style={styles.fileCard}>
-            <View style={styles.fileHeader}>
-              <View style={styles.fileInfo}>
-                <FileText size={20} color={colors.primary} />
-                <View style={styles.fileDetails}>
-                  <Text style={styles.fileName}>{file.name}</Text>
-                  <Text style={styles.fileSize}>{formatFileSize(file.size)}</Text>
+      <ScrollView style={styles.filesList} showsVerticalScrollIndicator={false}>
+        {files.map((file) => {
+          const IconComponent = getFileIcon(file.mime_type, file.name);
+          const ext = getFileExtension(file.name);
+          
+          return (
+            <TouchableOpacity
+              key={file.id}
+              style={styles.fileCard}
+              onPress={() => handleFilePress(file)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.fileCardContent}>
+                <View style={styles.fileIconContainer}>
+                  {file.mime_type?.startsWith('image/') ? (
+                    <Image
+                      source={{ uri: file.url }}
+                      style={styles.fileThumbnail}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.fileIconWrapper}>
+                      <IconComponent size={32} color={colors.primary} />
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.fileInfo}>
+                  <View style={styles.fileHeader}>
+                    <Text style={styles.fileName} numberOfLines={2}>
+                      {file.name}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.menuButton}
+                      onPress={() => handleFileMenu(file)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MoreVertical size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.fileMetaRow}>
+                    <Text style={styles.fileExtension}>{ext.toUpperCase()}</Text>
+                    <Text style={styles.fileSeparator}>•</Text>
+                    <Text style={styles.fileSize}>{formatFileSize(file.size)}</Text>
+                    <View
+                      style={[
+                        styles.fileTagSmall,
+                        { backgroundColor: FILE_TAG_COLORS[file.tag] },
+                      ]}
+                    >
+                      <Text style={styles.fileTagSmallText}>
+                        {FILE_TAG_LABELS[file.tag]}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.fileUploader}>
+                    Încărcat de {file.uploader || 'Necunoscut'} • {formatDate(file.created_at)}
+                  </Text>
                 </View>
               </View>
-              <View
-                style={[
-                  styles.fileTag,
-                  { backgroundColor: FILE_TAG_COLORS[file.tag] },
-                ]}
-              >
-                <Text style={styles.fileTagText}>
-                  {FILE_TAG_LABELS[file.tag]}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.fileLink}
-              onPress={() => Alert.alert('Link', file.url)}
-            >
-              <ExternalLink size={16} color={colors.primary} />
-              <Text style={styles.fileLinkText} numberOfLines={1}>
-                {file.url}
-              </Text>
             </TouchableOpacity>
-          </View>
-        ))}
-      </View>
+          );
+        })}
+      </ScrollView>
 
       <Modal
         visible={modalVisible}
@@ -294,16 +532,6 @@ export default function FilesTab({ projectId }: FilesTabProps) {
                   </TouchableOpacity>
                 ))}
               </View>
-
-              <Text style={styles.label}>Mărime (bytes, opțional)</Text>
-              <TextInput
-                style={styles.input}
-                value={size}
-                onChangeText={setSize}
-                placeholder="ex: 512000"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-              />
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -324,6 +552,54 @@ export default function FilesTab({ projectId }: FilesTabProps) {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={previewModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setPreviewModalVisible(false)}
+      >
+        <View style={styles.previewOverlay}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewTitle} numberOfLines={1}>
+              {selectedFile?.name}
+            </Text>
+            <View style={styles.previewActions}>
+              <TouchableOpacity
+                style={styles.previewButton}
+                onPress={() => {
+                  if (selectedFile) {
+                    WebBrowser.openBrowserAsync(selectedFile.url);
+                  }
+                }}
+              >
+                <ExternalLink size={24} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.previewButton}
+                onPress={() => setPreviewModalVisible(false)}
+              >
+                <X size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {selectedFile && (
+            <ScrollView
+              style={styles.previewContent}
+              contentContainerStyle={styles.previewContentContainer}
+              maximumZoomScale={3}
+              minimumZoomScale={1}
+            >
+              <Image
+                source={{ uri: selectedFile.url }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+            </ScrollView>
+          )}
         </View>
       </Modal>
     </View>
@@ -351,62 +627,91 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   filesList: {
-    gap: 12,
+    flex: 1,
   },
   fileCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  fileCardContent: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 12,
+  },
+  fileIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.background,
+  },
+  fileThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  fileIconWrapper: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fileInfo: {
+    flex: 1,
+    gap: 4,
   },
   fileHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  fileInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    flex: 1,
-  },
-  fileDetails: {
-    flex: 1,
+    gap: 8,
   },
   fileName: {
+    flex: 1,
     fontSize: 16,
     fontWeight: '600' as const,
     color: colors.text,
-    marginBottom: 4,
+    lineHeight: 20,
   },
-  fileSize: {
-    fontSize: 14,
+  menuButton: {
+    padding: 4,
+  },
+  fileMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  fileExtension: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: colors.primary,
+    textTransform: 'uppercase' as const,
+  },
+  fileSeparator: {
+    fontSize: 12,
     color: colors.textSecondary,
   },
-  fileTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  fileTagText: {
+  fileSize: {
     fontSize: 12,
+    color: colors.textSecondary,
+  },
+  fileTagSmall: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  fileTagSmallText: {
+    fontSize: 11,
     fontWeight: '600' as const,
     color: '#fff',
   },
-  fileLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  fileLinkText: {
-    fontSize: 14,
-    color: colors.primary,
-    flex: 1,
+  fileUploader: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
@@ -502,5 +807,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#fff',
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 60,
+  },
+  previewTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#fff',
+    marginRight: 16,
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  previewButton: {
+    padding: 8,
+  },
+  previewContent: {
+    flex: 1,
+  },
+  previewContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
 });

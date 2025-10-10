@@ -123,6 +123,8 @@ export interface ProjFile {
   url: string;
   tag: FileTag;
   size?: number;
+  mime_type?: string;
+  uploader?: string;
   created_at: string;
 }
 
@@ -149,6 +151,8 @@ export interface CreateFileInput {
   url: string;
   tag: FileTag;
   size?: number;
+  mime_type?: string;
+  uploader?: string;
 }
 
 export interface CreateChatMessageInput {
