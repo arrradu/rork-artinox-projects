@@ -17,6 +17,7 @@ import {
   useVisibleProjects,
 } from '@/contexts/AppContext';
 import EmptyState from '@/components/EmptyState';
+import TaskStatusToggle from '@/components/TaskStatusToggle';
 import TagStatus from '@/components/TagStatus';
 import DeadlineBadge from '@/components/DeadlineBadge';
 import colors from '@/constants/colors';
@@ -29,18 +30,14 @@ interface TaskItemProps {
 }
 
 function TaskItem({ task, project, onStatusChange }: TaskItemProps) {
-  const handleStatusChange = () => {
-    const newStatus: TaskStatus =
-      task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
+  const handleStatusChange = (newStatus: TaskStatus) => {
     onStatusChange(task.id, newStatus);
   };
 
+  const isOverdue = task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date();
+
   return (
-    <TouchableOpacity
-      style={[styles.taskCard, task.status === 'done' && styles.taskCardDone]}
-      onPress={handleStatusChange}
-      activeOpacity={0.7}
-    >
+    <View style={[styles.taskCard, task.status === 'done' && styles.taskCardDone]}>
       <View style={styles.taskHeader}>
         <View style={styles.taskTitleRow}>
           <Text
@@ -53,7 +50,6 @@ function TaskItem({ task, project, onStatusChange }: TaskItemProps) {
             {task.title}
           </Text>
         </View>
-        <TagStatus type="task" status={task.status} size="small" />
       </View>
 
       {project && (
@@ -62,12 +58,29 @@ function TaskItem({ task, project, onStatusChange }: TaskItemProps) {
         </Text>
       )}
 
-      {task.due_date && (
-        <View style={styles.taskFooter}>
-          <DeadlineBadge dueDate={task.due_date} size="small" />
-        </View>
+      <View style={styles.taskMeta}>
+        {isOverdue && (
+          <View style={styles.overdueBadge}>
+            <AlertCircle size={14} color={colors.error} />
+            <Text style={styles.overdueText}>Întârziat</Text>
+          </View>
+        )}
+        {task.due_date && <DeadlineBadge dueDate={task.due_date} size="small" />}
+      </View>
+
+      {task.status === 'done' && task.done_at && (
+        <Text style={styles.doneAtText}>
+          Finalizat la: {new Date(task.done_at).toLocaleDateString('ro-RO', {
+            day: 'numeric',
+            month: 'short',
+          })}
+        </Text>
       )}
-    </TouchableOpacity>
+
+      <View style={styles.statusToggleContainer}>
+        <TaskStatusToggle status={task.status} onChange={handleStatusChange} />
+      </View>
+    </View>
   );
 }
 
@@ -583,6 +596,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: 12,
   },
   taskCardDone: {
     opacity: 0.6,
@@ -591,8 +605,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-    gap: 12,
   },
   taskTitleRow: {
     flex: 1,
@@ -609,9 +621,33 @@ const styles = StyleSheet.create({
   taskProject: {
     fontSize: 13,
     color: colors.textSecondary,
-    marginBottom: 8,
   },
-  taskFooter: {
+  taskMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  overdueBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: `${colors.error}15`,
+  },
+  overdueText: {
+    fontSize: 12,
+    fontWeight: '500' as const,
+    color: colors.error,
+  },
+  doneAtText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic' as const,
+  },
+  statusToggleContainer: {
     marginTop: 4,
   },
 });

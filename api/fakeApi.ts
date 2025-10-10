@@ -752,12 +752,21 @@ export const fakeApi = {
       const index = tasks.findIndex(t => t.id === id);
       if (index === -1) return undefined;
       
+      const currentTask = tasks[index];
+      let done_at = currentTask.done_at;
+      
+      if (input.status !== undefined) {
+        if (input.status === 'done' && currentTask.status !== 'done') {
+          done_at = new Date().toISOString();
+        } else if (input.status !== 'done') {
+          done_at = undefined;
+        }
+      }
+      
       const updated: Task = {
-        ...tasks[index],
+        ...currentTask,
         ...input,
-        done_at: input.status === 'done' && tasks[index].status !== 'done'
-          ? new Date().toISOString()
-          : tasks[index].done_at,
+        done_at,
       };
       
       tasks[index] = updated;
