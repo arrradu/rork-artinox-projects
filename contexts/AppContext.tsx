@@ -12,12 +12,20 @@ import type {
   Department,
   CreateFileInput,
   CreateChatMessageInput,
-  CreateSalesNoteInput
+  CreateSalesNoteInput,
+  User,
+  CreateProjectMemberInput
 } from '@/types';
 
 export const [AppContext, useApp] = createContextHook(() => {
   const queryClient = useQueryClient();
-  const [currentUser] = useState({ name: 'Andrei Ionescu', email: 'andrei@artinox.ro' });
+  const [currentUser] = useState<User>({
+    id: '1',
+    name: 'Andrei Ionescu',
+    email: 'andrei@artinox.ro',
+    role: 'sales',
+    department: 'sales',
+  });
 
   const projectsQuery = useQuery({
     queryKey: ['projects'],
@@ -47,6 +55,16 @@ export const [AppContext, useApp] = createContextHook(() => {
   const salesNotesQuery = useQuery({
     queryKey: ['salesNotes'],
     queryFn: fakeApi.salesNotes.getAll,
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ['users'],
+    queryFn: fakeApi.users.getAll,
+  });
+
+  const projectMembersQuery = useQuery({
+    queryKey: ['projectMembers'],
+    queryFn: fakeApi.projectMembers.getAll,
   });
 
   const createProjectMutation = useMutation({
@@ -157,6 +175,20 @@ export const [AppContext, useApp] = createContextHook(() => {
     },
   });
 
+  const createProjectMemberMutation = useMutation({
+    mutationFn: (input: CreateProjectMemberInput) => fakeApi.projectMembers.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers'] });
+    },
+  });
+
+  const deleteProjectMemberMutation = useMutation({
+    mutationFn: (id: string) => fakeApi.projectMembers.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMembers'] });
+    },
+  });
+
   const toggleDepartmentAccess = useCallback(async (projectId: string, department: Department) => {
     const project = projectsQuery.data?.find(p => p.id === projectId);
     if (!project) return;
@@ -207,6 +239,14 @@ export const [AppContext, useApp] = createContextHook(() => {
     salesNotesLoading: salesNotesQuery.isLoading,
     salesNotesError: salesNotesQuery.error,
     
+    users: usersQuery.data || [],
+    usersLoading: usersQuery.isLoading,
+    usersError: usersQuery.error,
+    
+    projectMembers: projectMembersQuery.data || [],
+    projectMembersLoading: projectMembersQuery.isLoading,
+    projectMembersError: projectMembersQuery.error,
+    
     createProject: createProjectMutation.mutateAsync,
     updateProject,
     deleteProject: deleteProjectMutation.mutateAsync,
@@ -227,6 +267,9 @@ export const [AppContext, useApp] = createContextHook(() => {
     
     createSalesNote: createSalesNoteMutation.mutateAsync,
     deleteSalesNote: deleteSalesNoteMutation.mutateAsync,
+    
+    createProjectMember: createProjectMemberMutation.mutateAsync,
+    deleteProjectMember: deleteProjectMemberMutation.mutateAsync,
     
     toggleDepartmentAccess,
   }), [
@@ -249,6 +292,12 @@ export const [AppContext, useApp] = createContextHook(() => {
     salesNotesQuery.data,
     salesNotesQuery.isLoading,
     salesNotesQuery.error,
+    usersQuery.data,
+    usersQuery.isLoading,
+    usersQuery.error,
+    projectMembersQuery.data,
+    projectMembersQuery.isLoading,
+    projectMembersQuery.error,
     createProjectMutation.mutateAsync,
     updateProject,
     deleteProjectMutation.mutateAsync,
@@ -264,6 +313,8 @@ export const [AppContext, useApp] = createContextHook(() => {
     deleteChatMessageMutation.mutateAsync,
     createSalesNoteMutation.mutateAsync,
     deleteSalesNoteMutation.mutateAsync,
+    createProjectMemberMutation.mutateAsync,
+    deleteProjectMemberMutation.mutateAsync,
     toggleDepartmentAccess,
   ]);
 });
@@ -319,4 +370,52 @@ export function useSalesNotesByProjectId(projectId: string | undefined) {
   return useMemo(() => salesNotes.filter(n => n.project_id === projectId).sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   ), [salesNotes, projectId]);
+}
+
+export function useUserById(userId: string | undefined) {
+  const { users } = useApp();
+  return useMemo(() => users.find(u => u.id === userId), [users, userId]);
+}
+
+export function useUsersByDepartment(department: Department) {
+  const { users } = useApp();
+  return useMemo(() => users.filter(u => u.department === department), [users, department]);
+}
+
+export function useProjectMembersByProjectId(projectId: string | undefined) {
+  const { projectMembers } = useApp();
+  return useMemo(() => projectMembers.filter(pm => pm.project_id === projectId), [projectMembers, projectId]);
+}
+
+export function useProjectMembersByUserId(userId: string | undefined) {
+  const { projectMembers } = useApp();
+  return useMemo(() => projectMembers.filter(pm => pm.user_id === userId), [projectMembers, userId]);
+}
+
+export function useVisibleProjects() {
+  const { projects, currentUser, projectMembers } = useApp();
+  
+  return useMemo(() => {
+    if (currentUser.role === 'admin') {
+      return projects;
+    }
+    
+    return projects.filter(project => {
+      const hasAccess = project.access[currentUser.department];
+      const isMember = projectMembers.some(
+        pm => pm.project_id === project.id && pm.user_id === currentUser.id
+      );
+      return hasAccess || isMember;
+    });
+  }, [projects, currentUser, projectMembers]);
+}
+
+export function useTasksByUserId(userId: string | undefined) {
+  const { tasks, users } = useApp();
+  const user = useMemo(() => users.find(u => u.id === userId), [users, userId]);
+  
+  return useMemo(() => {
+    if (!user) return [];
+    return tasks.filter(t => t.assignee === user.name);
+  }, [tasks, user]);
 }

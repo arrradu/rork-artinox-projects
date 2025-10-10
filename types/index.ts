@@ -1,5 +1,22 @@
 export type Department = 'sales' | 'produce' | 'conta' | 'depozit' | 'vamuire' | 'livrare' | 'achizitii' | 'logistica';
 
+export type UserRole = 'admin' | 'sales' | 'produce' | 'conta' | 'depozit' | 'vamuire' | 'livrare' | 'achizitii' | 'logistica';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  department: Department;
+}
+
+export interface ProjectMember {
+  id: string;
+  project_id: string;
+  user_id: string;
+  role?: string;
+}
+
 export type ProjectStatus = 'nou' | 'in_lucru' | 'livrare' | 'finalizat' | 'anulat';
 
 export type TaskStatus = 'todo' | 'doing' | 'done';
@@ -196,4 +213,10 @@ export interface UpdateProcItemInput {
   attachment_url?: string;
   transport?: TransportInfo;
   qty_received?: number;
+}
+
+export interface CreateProjectMemberInput {
+  project_id: string;
+  user_id: string;
+  role?: string;
 }

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FolderOpen, CheckSquare, User } from "lucide-react-native";
+import { FolderOpen, Users, User } from "lucide-react-native";
 import React from "react";
 import colors from "@/constants/colors";
 
@@ -24,10 +24,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tasks"
+        name="departments"
         options={{
-          title: "Tasks",
-          tabBarIcon: ({ color }) => <CheckSquare size={24} color={color} />,
+          title: "Departamente",
+          tabBarIcon: ({ color }) => <Users size={24} color={color} />,
         }}
       />
       <Tabs.Screen

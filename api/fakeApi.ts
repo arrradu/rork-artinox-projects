@@ -17,7 +17,10 @@ import type {
   CreateSalesNoteInput,
   ProcItem,
   CreateProcItemInput,
-  UpdateProcItemInput
+  UpdateProcItemInput,
+  User,
+  ProjectMember,
+  CreateProjectMemberInput
 } from '@/types';
 
 let projects: Project[] = [
@@ -273,6 +276,78 @@ let salesNotes: SalesNote[] = [
   },
 ];
 
+let users: User[] = [
+  {
+    id: '1',
+    name: 'Andrei Ionescu',
+    email: 'andrei@artinox.ro',
+    role: 'sales',
+    department: 'sales',
+  },
+  {
+    id: '2',
+    name: 'Maria Popescu',
+    email: 'maria@artinox.ro',
+    role: 'produce',
+    department: 'produce',
+  },
+  {
+    id: '3',
+    name: 'Ion Vasile',
+    email: 'ion@artinox.ro',
+    role: 'achizitii',
+    department: 'achizitii',
+  },
+  {
+    id: '4',
+    name: 'Elena Dumitrescu',
+    email: 'elena@artinox.ro',
+    role: 'conta',
+    department: 'conta',
+  },
+  {
+    id: '5',
+    name: 'Mihai Georgescu',
+    email: 'mihai@artinox.ro',
+    role: 'livrare',
+    department: 'livrare',
+  },
+  {
+    id: '6',
+    name: 'Ana Marinescu',
+    email: 'ana@artinox.ro',
+    role: 'depozit',
+    department: 'depozit',
+  },
+  {
+    id: '7',
+    name: 'Cristian Popa',
+    email: 'cristian@artinox.ro',
+    role: 'vamuire',
+    department: 'vamuire',
+  },
+  {
+    id: '8',
+    name: 'Laura Stan',
+    email: 'laura@artinox.ro',
+    role: 'logistica',
+    department: 'logistica',
+  },
+];
+
+let projectMembers: ProjectMember[] = [
+  { id: '1', project_id: '1', user_id: '1' },
+  { id: '2', project_id: '1', user_id: '2' },
+  { id: '3', project_id: '1', user_id: '3' },
+  { id: '4', project_id: '2', user_id: '1' },
+  { id: '5', project_id: '3', user_id: '1' },
+  { id: '6', project_id: '3', user_id: '2' },
+  { id: '7', project_id: '3', user_id: '3' },
+  { id: '8', project_id: '3', user_id: '4' },
+  { id: '9', project_id: '3', user_id: '5' },
+  { id: '10', project_id: '3', user_id: '6' },
+];
+
 let procItems: ProcItem[] = [
   {
     id: '1',
@@ -338,6 +413,61 @@ let procItems: ProcItem[] = [
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
 export const fakeApi = {
+  users: {
+    getAll: async (): Promise<User[]> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return [...users];
+    },
+    
+    getById: async (id: string): Promise<User | undefined> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return users.find(u => u.id === id);
+    },
+    
+    getByDepartment: async (department: Department): Promise<User[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return users.filter(u => u.department === department);
+    },
+  },
+  
+  projectMembers: {
+    getAll: async (): Promise<ProjectMember[]> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return [...projectMembers];
+    },
+    
+    getByProjectId: async (projectId: string): Promise<ProjectMember[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return projectMembers.filter(pm => pm.project_id === projectId);
+    },
+    
+    getByUserId: async (userId: string): Promise<ProjectMember[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return projectMembers.filter(pm => pm.user_id === userId);
+    },
+    
+    create: async (input: CreateProjectMemberInput): Promise<ProjectMember> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const newMember: ProjectMember = {
+        id: generateId(),
+        project_id: input.project_id,
+        user_id: input.user_id,
+        role: input.role,
+      };
+      
+      projectMembers = [...projectMembers, newMember];
+      return newMember;
+    },
+    
+    delete: async (id: string): Promise<boolean> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const initialLength = projectMembers.length;
+      projectMembers = projectMembers.filter(pm => pm.id !== id);
+      return projectMembers.length < initialLength;
+    },
+  },
+  
   procItems: {
     getAll: async (): Promise<ProcItem[]> => {
       await new Promise(resolve => setTimeout(resolve, 100));
