@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useContractById } from '@/contexts/AppContext';
+import { useContractById, useApp } from '@/contexts/AppContext';
 import colors from '@/constants/colors';
 import TasksTab from '@/components/project-detail/TasksTab';
 import PaymentsTab from '@/components/project-detail/PaymentsTab';
@@ -24,6 +24,7 @@ export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const contract = useContractById(id);
+  const { currentUser } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   if (!contract) {

@@ -9,9 +9,10 @@ import colors from '@/constants/colors';
 import { formatDateShort, formatDateToDisplay, formatDateToISO, getCurrentDateDisplay } from '@/constants/formatters';
 import type { Payment, PaymentStatus } from '@/types';
 
-interface PaymentsTabProps {
-  projectId?: string;
-  contractId?: string;
+type EntityScope = { projectId?: string; contractId?: string };
+
+interface PaymentsTabProps extends EntityScope {
+  currentUserId?: string;
 }
 
 type PaymentFilter = 'toate' | 'neplatite' | 'depasite' | 'partiale' | 'platite';
@@ -372,12 +373,13 @@ function MarkPaidModal({
 }
 
 export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps) {
-  const projectPayments = usePaymentsByProjectId(projectId);
-  const contractPayments = usePaymentsByContractId(contractId);
+  const scopeId = contractId ?? projectId ?? '';
+  const projectPayments = usePaymentsByProjectId(projectId ?? undefined);
+  const contractPayments = usePaymentsByContractId(contractId ?? undefined);
   const payments = contractId ? contractPayments : projectPayments;
   
-  const projectFinancials = useProjectFinancials(projectId);
-  const contractFinancials = useContractFinancials(contractId);
+  const projectFinancials = useProjectFinancials(projectId ?? undefined);
+  const contractFinancials = useContractFinancials(contractId ?? undefined);
   const { total, paid, remaining } = contractId ? contractFinancials : projectFinancials;
   const { currentUser, createPayment, updatePayment } = useApp();
   const [filter, setFilter] = useState<PaymentFilter>('toate');
@@ -459,7 +461,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
           visible={addModalVisible}
           onClose={() => setAddModalVisible(false)}
           onSubmit={handleAddPayment}
-          projectId={projectId}
+          projectId={scopeId}
         />
       </View>
     );
@@ -543,7 +545,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onSubmit={handleAddPayment}
-        projectId={projectId}
+        projectId={scopeId}
       />
 
       <MarkPaidModal

@@ -14,9 +14,10 @@ import { useChatMessagesByProjectId, useChatMessagesByContractId, useSalesNotesB
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 
-interface ChatTabProps {
-  projectId?: string;
-  contractId?: string;
+type EntityScope = { projectId?: string; contractId?: string };
+
+interface ChatTabProps extends EntityScope {
+  currentUserId?: string;
 }
 
 function formatMessageTime(dateString: string): string {
@@ -35,9 +36,9 @@ function formatMessageTime(dateString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function ChatTab({ projectId, contractId }: ChatTabProps) {
-  const projectMessages = useChatMessagesByProjectId(projectId);
-  const contractMessages = useChatMessagesByContractId(contractId);
+export default function ChatTab({ projectId, contractId, currentUserId }: ChatTabProps) {
+  const projectMessages = useChatMessagesByProjectId(projectId ?? undefined);
+  const contractMessages = useChatMessagesByContractId(contractId ?? undefined);
   const messages = contractId ? contractMessages : projectMessages;
   
   const projectSalesNotes = useSalesNotesByProjectId(projectId);
@@ -61,15 +62,17 @@ export default function ChatTab({ projectId, contractId }: ChatTabProps) {
   }, [messages.length]);
 
   const handleSendMessage = async () => {
-    if (!messageText.trim()) return;
+    const trimmedText = messageText?.trim() ?? '';
+    if (!trimmedText) return;
 
     setLoading(true);
     try {
       await createChatMessage({
-        project_id: projectId,
-        author: currentUser.name,
-        text: messageText.trim(),
-        reply_to_id: replyToId,
+        project_id: projectId ?? undefined,
+        contract_id: contractId ?? undefined,
+        author: currentUser.name ?? 'Necunoscut',
+        text: trimmedText,
+        reply_to_id: replyToId ?? undefined,
       });
       
       setMessageText('');
@@ -82,14 +85,16 @@ export default function ChatTab({ projectId, contractId }: ChatTabProps) {
   };
 
   const handleAddNote = async () => {
-    if (!noteText.trim()) return;
+    const trimmedNote = noteText?.trim() ?? '';
+    if (!trimmedNote) return;
 
     setLoading(true);
     try {
       await createSalesNote({
-        project_id: projectId,
-        author: currentUser.name,
-        text: noteText.trim(),
+        project_id: projectId ?? undefined,
+        contract_id: contractId ?? undefined,
+        author: currentUser.name ?? 'Necunoscut',
+        text: trimmedNote,
       });
       
       setNoteText('');

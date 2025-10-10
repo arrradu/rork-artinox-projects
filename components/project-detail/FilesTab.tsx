@@ -36,9 +36,10 @@ import colors from '@/constants/colors';
 import type { FileTag, ProjFile } from '@/types';
 import { filesApi } from '@/api/filesApi';
 
-interface FilesTabProps {
-  projectId: string;
-  contractId?: string;
+type EntityScope = { projectId?: string; contractId?: string };
+
+interface FilesTabProps extends EntityScope {
+  currentUserId?: string;
 }
 
 interface SelectedFileInfo {
@@ -129,8 +130,9 @@ function formatDate(isoString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function FilesTab({ projectId, contractId }: FilesTabProps) {
-  const files = useFilesByProjectId(projectId);
+export default function FilesTab({ projectId, contractId, currentUserId }: FilesTabProps) {
+  const scopeId = contractId ?? projectId ?? '';
+  const files = useFilesByProjectId(scopeId);
   const { createFile, deleteFile, currentUser } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
@@ -244,7 +246,7 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(20);
       const { uploadUrl, fileUrl } = await filesApi.getPresignedUpload(
-        projectId,
+        scopeId,
         name.trim(),
         selectedFileInfo.mimeType
       );
@@ -267,8 +269,8 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(70);
       await filesApi.notifyUploaded({
-        project_id: projectId,
-        contract_id: contractId,
+        project_id: projectId ?? undefined,
+        contract_id: contractId ?? undefined,
         name: name.trim(),
         url: fileUrl,
         mime_type: selectedFileInfo.mimeType,
@@ -281,8 +283,8 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(90);
       await createFile({
-        project_id: projectId,
-        contract_id: contractId,
+        project_id: projectId ?? undefined,
+        contract_id: contractId ?? undefined,
         name: name.trim(),
         url: fileUrl,
         tag,
