@@ -7,9 +7,10 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Search, Plus, FolderOpen } from 'lucide-react-native';
+import { Search, Plus, FolderOpen, Filter } from 'lucide-react-native';
 import { useApp, useProjectFinancials } from '@/contexts/AppContext';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
@@ -48,21 +49,58 @@ function ProjectCard({ project }: { project: Project }) {
   );
 }
 
+type DateFilter = 'all' | 'current_month' | 'last_3_months' | 'current_year';
+
 export default function ProjectsScreen() {
   const router = useRouter();
   const { projects, projectsLoading } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects;
+    let filtered = [...projects];
 
-    const query = searchQuery.toLowerCase();
-    return projects.filter(
-      (p) =>
-        p.title.toLowerCase().includes(query) ||
-        p.client_name.toLowerCase().includes(query)
+    filtered.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [projects, searchQuery]);
+
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      filtered = filtered.filter((p) => {
+        const projectDate = new Date(p.created_at);
+        const projectYear = projectDate.getFullYear();
+        const projectMonth = projectDate.getMonth();
+
+        switch (dateFilter) {
+          case 'current_month':
+            return projectYear === currentYear && projectMonth === currentMonth;
+          case 'last_3_months':
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            return projectDate >= threeMonthsAgo;
+          case 'current_year':
+            return projectYear === currentYear;
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(query) ||
+          p.client_name.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [projects, searchQuery, dateFilter]);
 
   if (projectsLoading) {
     return (
@@ -88,16 +126,122 @@ export default function ProjectsScreen() {
         }}
       />
 
-      <View style={styles.searchContainer}>
-        <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Caută proiecte sau clienți..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={colors.textTertiary}
-        />
+      <View style={styles.searchRow}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Caută proiecte sau clienți..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor={colors.textTertiary}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+          activeOpacity={0.7}
+        >
+          <Filter size={20} color={dateFilter !== 'all' ? colors.primary : colors.textSecondary} />
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showFilterModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFilterModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filtrare după dată</Text>
+            
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                dateFilter === 'current_month' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setDateFilter('current_month');
+                setShowFilterModal(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  dateFilter === 'current_month' && styles.filterOptionTextActive,
+                ]}
+              >
+                Luna curentă
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                dateFilter === 'last_3_months' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setDateFilter('last_3_months');
+                setShowFilterModal(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  dateFilter === 'last_3_months' && styles.filterOptionTextActive,
+                ]}
+              >
+                Ultimele 3 luni
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                dateFilter === 'current_year' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setDateFilter('current_year');
+                setShowFilterModal(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  dateFilter === 'current_year' && styles.filterOptionTextActive,
+                ]}
+              >
+                Anul curent
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                dateFilter === 'all' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setDateFilter('all');
+                setShowFilterModal(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  dateFilter === 'all' && styles.filterOptionTextActive,
+                ]}
+              >
+                Toate
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {filteredProjects.length === 0 ? (
         <EmptyState
@@ -137,17 +281,33 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: 8,
   },
-  searchContainer: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
+    gap: 8,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  filterButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchIcon: {
     marginRight: 8,
@@ -204,5 +364,45 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 320,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  filterOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 8,
+    backgroundColor: colors.background,
+  },
+  filterOptionActive: {
+    backgroundColor: colors.primary,
+  },
+  filterOptionText: {
+    fontSize: 15,
+    color: colors.text,
+  },
+  filterOptionTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600' as const,
   },
 });
