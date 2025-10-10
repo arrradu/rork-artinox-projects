@@ -142,6 +142,10 @@ let payments: Payment[] = [
     status: 'platit',
     paid_amount: 6000,
     paid_at: '2025-01-09T10:00:00Z',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-05T10:30:00Z',
+    marked_paid_by: 'Elena Dumitrescu',
+    marked_paid_at: '2025-01-09T10:00:00Z',
   },
   {
     id: '2',
@@ -150,6 +154,8 @@ let payments: Payment[] = [
     amount: 9000,
     due_date: '2025-01-25T12:00:00Z',
     status: 'neplatit',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-05T10:35:00Z',
   },
   {
     id: '3',
@@ -157,6 +163,8 @@ let payments: Payment[] = [
     label: 'Plată integrală',
     amount: 8500,
     status: 'neplatit',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-08T14:40:00Z',
   },
   {
     id: '4',
@@ -167,6 +175,10 @@ let payments: Payment[] = [
     status: 'platit',
     paid_amount: 16000,
     paid_at: '2024-12-14T11:00:00Z',
+    created_by: 'Maria Popescu',
+    created_at: '2024-12-10T09:30:00Z',
+    marked_paid_by: 'Elena Dumitrescu',
+    marked_paid_at: '2024-12-14T11:00:00Z',
   },
   {
     id: '5',
@@ -177,6 +189,10 @@ let payments: Payment[] = [
     status: 'partial',
     paid_amount: 10000,
     paid_at: '2025-01-09T15:00:00Z',
+    created_by: 'Maria Popescu',
+    created_at: '2024-12-10T09:35:00Z',
+    marked_paid_by: 'Elena Dumitrescu',
+    marked_paid_at: '2025-01-09T15:00:00Z',
   },
 ];
 
@@ -797,7 +813,7 @@ export const fakeApi = {
       return payments.find(p => p.id === id);
     },
     
-    create: async (input: CreatePaymentInput): Promise<Payment> => {
+    create: async (input: CreatePaymentInput, currentUser: string): Promise<Payment> => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const newPayment: Payment = {
@@ -807,21 +823,42 @@ export const fakeApi = {
         amount: input.amount,
         due_date: input.due_date,
         status: input.status || 'neplatit',
+        comment: input.comment,
+        created_by: currentUser,
+        created_at: new Date().toISOString(),
       };
       
       payments = [newPayment, ...payments];
       return newPayment;
     },
     
-    update: async (id: string, input: UpdatePaymentInput): Promise<Payment | undefined> => {
+    update: async (id: string, input: UpdatePaymentInput, currentUser?: string): Promise<Payment | undefined> => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const index = payments.findIndex(p => p.id === id);
       if (index === -1) return undefined;
       
+      const currentPayment = payments[index];
+      let marked_paid_by = currentPayment.marked_paid_by;
+      let marked_paid_at = currentPayment.marked_paid_at;
+      
+      if (input.status !== undefined && input.paid_amount !== undefined && currentUser) {
+        if (input.status === 'platit' || input.status === 'partial') {
+          marked_paid_by = currentUser;
+          marked_paid_at = new Date().toISOString();
+        }
+      }
+      
+      if (input.status !== undefined && input.status === 'neplatit') {
+        marked_paid_by = undefined;
+        marked_paid_at = undefined;
+      }
+      
       const updated: Payment = {
-        ...payments[index],
+        ...currentPayment,
         ...input,
+        marked_paid_by,
+        marked_paid_at,
       };
       
       payments[index] = updated;

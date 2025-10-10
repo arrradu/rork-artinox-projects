@@ -112,7 +112,7 @@ export const [AppContext, useApp] = createContextHook(() => {
   });
 
   const createPaymentMutation = useMutation({
-    mutationFn: (input: CreatePaymentInput) => fakeApi.payments.create(input),
+    mutationFn: (input: CreatePaymentInput) => fakeApi.payments.create(input, currentUser.name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
     },
@@ -120,7 +120,7 @@ export const [AppContext, useApp] = createContextHook(() => {
 
   const updatePaymentMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdatePaymentInput }) => 
-      fakeApi.payments.update(id, input),
+      fakeApi.payments.update(id, input, currentUser.name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
     },

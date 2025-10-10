@@ -54,6 +54,12 @@ export interface Payment {
   status: PaymentStatus;
   paid_amount?: number;
   paid_at?: string;
+  created_by: string;
+  created_at: string;
+  marked_paid_by?: string;
+  marked_paid_at?: string;
+  comment?: string;
+  attachment_url?: string;
 }
 
 export interface CreateProjectInput {
@@ -78,6 +84,7 @@ export interface CreatePaymentInput {
   amount: number;
   due_date?: string;
   status?: PaymentStatus;
+  comment?: string;
 }
 
 export interface UpdateProjectInput {
@@ -103,6 +110,8 @@ export interface UpdatePaymentInput {
   status?: PaymentStatus;
   paid_amount?: number;
   paid_at?: string;
+  comment?: string;
+  attachment_url?: string;
 }
 
 export type FileTag = 'cerere' | 'contract' | 'desen' | 'poza' | 'altul';
