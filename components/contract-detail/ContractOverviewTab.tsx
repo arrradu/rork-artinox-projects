@@ -16,71 +16,67 @@ export default function ContractOverviewTab({ contract }: ContractOverviewTabPro
 
   return (
     <View style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Informații contract</Text>
+      <View style={styles.infoCard}>
+        <View style={styles.statusRow}>
+          <Text style={styles.sectionTitle}>Informații contract</Text>
+          <TagStatus type="contract" status={contract.status} size="small" />
+        </View>
 
-        <View style={styles.infoCard}>
+        {contract.code && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status</Text>
-            <TagStatus type="contract" status={contract.status} size="small" />
+            <Text style={styles.infoLabel}>Cod</Text>
+            <Text style={styles.infoValue}>{contract.code}</Text>
           </View>
+        )}
 
-          {contract.code && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Cod</Text>
-              <Text style={styles.infoValue}>{contract.code}</Text>
-            </View>
-          )}
-
-          {contract.start_date && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Data început</Text>
-              <Text style={styles.infoValue}>
-                {formatDateToDisplay(contract.start_date)}
-              </Text>
-            </View>
-          )}
-
-          {contract.description && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.descriptionRow}>
-                <Text style={styles.infoLabel}>Descriere</Text>
-                <Text style={styles.descriptionText}>{contract.description}</Text>
-              </View>
-            </>
-          )}
-
-          <View style={styles.divider} />
-
+        {contract.start_date && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Valoare totală</Text>
-            <Money amount={total} size="medium" color={colors.text} />
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Plătit</Text>
-            <Money amount={paid} size="medium" color={colors.success} />
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Rest de încasat</Text>
-            <Money amount={remaining} size="medium" color={colors.primary} />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Creat de</Text>
-            <Text style={styles.infoValue}>{contract.created_by}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Data creării</Text>
+            <Text style={styles.infoLabel}>Data început</Text>
             <Text style={styles.infoValue}>
-              {formatDateToDisplay(contract.created_at)}
+              {formatDateToDisplay(contract.start_date)}
             </Text>
           </View>
+        )}
+
+        {contract.description && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.descriptionRow}>
+              <Text style={styles.infoLabel}>Descriere</Text>
+              <Text style={styles.descriptionText}>{contract.description}</Text>
+            </View>
+          </>
+        )}
+
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Valoare totală</Text>
+          <Money amount={total} size="medium" color={colors.text} />
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Plătit</Text>
+          <Money amount={paid} size="medium" color={colors.success} />
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Rest de încasat</Text>
+          <Money amount={remaining} size="medium" color={colors.primary} />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Creat de</Text>
+          <Text style={styles.infoValue}>{contract.created_by}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Data creării</Text>
+          <Text style={styles.infoValue}>
+            {formatDateToDisplay(contract.created_at)}
+          </Text>
         </View>
       </View>
     </View>
@@ -89,10 +85,7 @@ export default function ContractOverviewTab({ contract }: ContractOverviewTabPro
 
 const styles = StyleSheet.create({
   container: {
-    gap: 24,
-  },
-  section: {
-    gap: 12,
+    gap: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -102,10 +95,21 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     gap: 12,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   infoRow: {
     flexDirection: 'row',
