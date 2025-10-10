@@ -20,6 +20,7 @@ import EmptyState from '@/components/EmptyState';
 import TaskStatusToggle from '@/components/TaskStatusToggle';
 import TagStatus from '@/components/TagStatus';
 import DeadlineBadge from '@/components/DeadlineBadge';
+import { formatDateToDisplay, formatDateShort } from '@/constants/formatters';
 import colors from '@/constants/colors';
 import type { Task, TaskStatus, Project } from '@/types';
 
@@ -70,10 +71,7 @@ function TaskItem({ task, project, onStatusChange }: TaskItemProps) {
 
       {task.status === 'done' && task.done_at && (
         <Text style={styles.doneAtText}>
-          Finalizat la: {new Date(task.done_at).toLocaleDateString('ro-RO', {
-            day: 'numeric',
-            month: 'short',
-          })}
+          Finalizat la: {formatDateShort(task.done_at)}
         </Text>
       )}
 
@@ -253,7 +251,7 @@ export default function PersonDetailScreen() {
                 <View style={styles.statBadge}>
                   <Calendar size={14} color={colors.primary} />
                   <Text style={styles.statText}>
-                    Next: {new Date(nextDeadline).toLocaleDateString('ro-RO')}
+                    Next: {formatDateToDisplay(nextDeadline)}
                   </Text>
                 </View>
               )}

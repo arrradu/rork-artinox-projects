@@ -132,7 +132,7 @@ export default function CreateProjectScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Valoare totală (RON)</Text>
+            <Text style={styles.label}>Valoare totală (EUR)</Text>
             <TextInput
               style={styles.input}
               value={valueTotal}

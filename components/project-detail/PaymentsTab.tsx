@@ -6,6 +6,7 @@ import { usePaymentsByProjectId, useProjectFinancials, useApp } from '@/contexts
 import Money from '@/components/Money';
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
+import { formatDateShort, formatDateToDisplay, formatDateToISO, getCurrentDateDisplay } from '@/constants/formatters';
 import type { Payment, PaymentStatus } from '@/types';
 
 interface PaymentsTabProps {
@@ -13,12 +14,6 @@ interface PaymentsTabProps {
 }
 
 type PaymentFilter = 'toate' | 'neplatite' | 'depasite' | 'partiale' | 'platite';
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const months = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'noi', 'dec'];
-  return `${date.getDate()} ${months[date.getMonth()]}`;
-}
 
 function getDaysUntilDue(dueDate: string): number {
   const today = new Date();
@@ -141,18 +136,18 @@ function PaymentCard({ payment, onEdit, onMarkPaid, canEdit }: {
         <View style={styles.deadlineSection}>
           <CheckCircle size={14} color={colors.success} />
           <Text style={styles.paidAtText}>
-            Plătit la {formatDate(payment.paid_at)}
+            Plătit la {formatDateShort(payment.paid_at)}
           </Text>
         </View>
       )}
 
       <View style={styles.auditSection}>
         <Text style={styles.auditText}>
-          Creat de: {payment.created_by} • {formatDate(payment.created_at)}
+          Creat de: {payment.created_by} • {formatDateShort(payment.created_at)}
         </Text>
         {payment.marked_paid_by && payment.marked_paid_at && (
           <Text style={styles.auditText}>
-            Confirmat plătit de: {payment.marked_paid_by} • {formatDate(payment.marked_paid_at)}
+            Confirmat plătit de: {payment.marked_paid_by} • {formatDateShort(payment.marked_paid_at)}
           </Text>
         )}
       </View>
@@ -203,11 +198,21 @@ function AddPaymentModal({
       return;
     }
 
+    let dueDateISO: string | undefined = undefined;
+    if (dueDate) {
+      try {
+        dueDateISO = new Date(formatDateToISO(dueDate)).toISOString();
+      } catch (error) {
+        Alert.alert('Eroare', 'Formatul datei trebuie să fie DD-MM-YYYY');
+        return;
+      }
+    }
+
     onSubmit({
       project_id: projectId,
       label: label.trim(),
       amount: amountNum,
-      due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+      due_date: dueDateISO,
       comment: comment.trim() || undefined,
     });
 
@@ -232,7 +237,7 @@ function AddPaymentModal({
             placeholderTextColor={colors.textSecondary}
           />
 
-          <Text style={styles.inputLabel}>Sumă (RON) *</Text>
+          <Text style={styles.inputLabel}>Sumă (EUR) *</Text>
           <TextInput
             style={styles.input}
             value={amount}
@@ -242,12 +247,12 @@ function AddPaymentModal({
             placeholderTextColor={colors.textSecondary}
           />
 
-          <Text style={styles.inputLabel}>Scadență (YYYY-MM-DD)</Text>
+          <Text style={styles.inputLabel}>Scadență (DD-MM-YYYY)</Text>
           <TextInput
             style={styles.input}
             value={dueDate}
             onChangeText={setDueDate}
-            placeholder="2025-01-31"
+            placeholder="31-01-2025"
             placeholderTextColor={colors.textSecondary}
           />
 
@@ -293,7 +298,7 @@ function MarkPaidModal({
   React.useEffect(() => {
     if (payment) {
       setPaidAmount(payment.amount.toString());
-      setPaidAt(new Date().toISOString().split('T')[0]);
+      setPaidAt(getCurrentDateDisplay());
     }
   }, [payment]);
 
@@ -308,9 +313,17 @@ function MarkPaidModal({
 
     const newStatus: PaymentStatus = amountNum >= payment.amount ? 'platit' : 'partial';
 
+    let paidAtISO: string;
+    try {
+      paidAtISO = paidAt ? new Date(formatDateToISO(paidAt)).toISOString() : new Date().toISOString();
+    } catch (error) {
+      Alert.alert('Eroare', 'Formatul datei trebuie să fie DD-MM-YYYY');
+      return;
+    }
+
     onSubmit({
       paid_amount: amountNum,
-      paid_at: paidAt ? new Date(paidAt).toISOString() : new Date().toISOString(),
+      paid_at: paidAtISO,
       status: newStatus,
     });
   };
@@ -324,7 +337,7 @@ function MarkPaidModal({
           <Text style={styles.modalTitle}>Marchează plătit</Text>
           <Text style={styles.modalSubtitle}>{payment.label}</Text>
 
-          <Text style={styles.inputLabel}>Sumă plătită (RON) *</Text>
+          <Text style={styles.inputLabel}>Sumă plătită (EUR) *</Text>
           <TextInput
             style={styles.input}
             value={paidAmount}
@@ -334,12 +347,12 @@ function MarkPaidModal({
             placeholderTextColor={colors.textSecondary}
           />
 
-          <Text style={styles.inputLabel}>Data plății (YYYY-MM-DD)</Text>
+          <Text style={styles.inputLabel}>Data plății (DD-MM-YYYY)</Text>
           <TextInput
             style={styles.input}
             value={paidAt}
             onChangeText={setPaidAt}
-            placeholder="2025-01-10"
+            placeholder="10-01-2025"
             placeholderTextColor={colors.textSecondary}
           />
 

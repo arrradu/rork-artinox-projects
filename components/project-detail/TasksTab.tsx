@@ -5,6 +5,7 @@ import { useTasksByProjectId, useApp } from '@/contexts/AppContext';
 import TaskStatusToggle from '@/components/TaskStatusToggle';
 import DeadlineBadge from '@/components/DeadlineBadge';
 import EmptyState from '@/components/EmptyState';
+import { formatDateShort } from '@/constants/formatters';
 import colors from '@/constants/colors';
 import type { Task, TaskStatus } from '@/types';
 
@@ -48,10 +49,7 @@ function TaskItem({ task }: { task: Task }) {
 
       {task.status === 'done' && task.done_at && (
         <Text style={styles.doneAtText}>
-          Finalizat la: {new Date(task.done_at).toLocaleDateString('ro-RO', {
-            day: 'numeric',
-            month: 'short',
-          })}
+          Finalizat la: {formatDateShort(task.done_at)}
         </Text>
       )}
 

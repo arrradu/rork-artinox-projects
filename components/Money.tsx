@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet, TextStyle } from 'react-native';
 import colors from '@/constants/colors';
+import { formatCurrency } from '@/constants/formatters';
 
 interface MoneyProps {
   amount: number;
@@ -12,15 +13,12 @@ interface MoneyProps {
 
 export default function Money({ 
   amount, 
-  currency = 'RON', 
+  currency = 'EUR', 
   style, 
   size = 'medium',
   color = colors.text,
 }: MoneyProps) {
-  const formatted = new Intl.NumberFormat('ro-RO', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  const formatted = formatCurrency(amount);
 
   const fontSize = size === 'small' ? 13 : size === 'large' ? 20 : 15;
 

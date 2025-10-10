@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Plus, Search, X, Package, Truck } from 'lucide-react-native';
 import colors from '@/constants/colors';
+import { formatDateToDisplay } from '@/constants/formatters';
 import { fakeApi } from '@/api/fakeApi';
 import type { ProcItem, ProcStatus, ProcUnit, TransportType } from '@/types';
 
@@ -372,7 +373,7 @@ export default function ProcurementTab({ projectId }: ProcurementTabProps) {
                 )}
                 {item.price_estimate && (
                   <Text style={styles.itemDetailText}>
-                    Preț estimat: {item.price_estimate.toFixed(2)} RON
+                    Preț estimat: {item.price_estimate.toFixed(2)} EUR
                   </Text>
                 )}
                 {item.assignee && (
@@ -387,7 +388,7 @@ export default function ProcurementTab({ projectId }: ProcurementTabProps) {
                 )}
                 {item.due_date && (
                   <Text style={styles.itemDetailText}>
-                    Termen: {new Date(item.due_date).toLocaleDateString('ro-RO')}
+                    Termen: {formatDateToDisplay(item.due_date)}
                   </Text>
                 )}
               </View>
@@ -411,7 +412,7 @@ export default function ProcurementTab({ projectId }: ProcurementTabProps) {
                     )}
                     {item.transport.eta && (
                       <Text style={styles.transportText}>
-                        ETA: {new Date(item.transport.eta).toLocaleString('ro-RO')}
+                        ETA: {formatDateToDisplay(item.transport.eta)}
                       </Text>
                     )}
                   </View>
@@ -522,7 +523,7 @@ export default function ProcurementTab({ projectId }: ProcurementTabProps) {
                 placeholderTextColor={colors.textSecondary}
               />
 
-              <Text style={styles.label}>Preț estimat (RON)</Text>
+              <Text style={styles.label}>Preț estimat (EUR)</Text>
               <TextInput
                 style={styles.input}
                 value={formData.price_estimate}
@@ -668,12 +669,12 @@ export default function ProcurementTab({ projectId }: ProcurementTabProps) {
                 placeholderTextColor={colors.textSecondary}
               />
 
-              <Text style={styles.label}>ETA (estimat)</Text>
+              <Text style={styles.label}>ETA (DD-MM-YYYY)</Text>
               <TextInput
                 style={styles.input}
                 value={transportData.eta}
                 onChangeText={text => setTransportData({ ...transportData, eta: text })}
-                placeholder="ex: 2025-01-15T14:00:00Z"
+                placeholder="ex: 15-01-2025"
                 placeholderTextColor={colors.textSecondary}
               />
             </ScrollView>
