@@ -9,25 +9,24 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useProjectById } from '@/contexts/AppContext';
+import { useContractById } from '@/contexts/AppContext';
 import colors from '@/constants/colors';
-import OverviewTab from '@/components/project-detail/OverviewTab';
 import TasksTab from '@/components/project-detail/TasksTab';
 import PaymentsTab from '@/components/project-detail/PaymentsTab';
 import FilesTab from '@/components/project-detail/FilesTab';
 import ChatTab from '@/components/project-detail/ChatTab';
 import ProcurementTab from '@/components/project-detail/ProcurementTab';
-import ContractsTab from '@/components/project-detail/ContractsTab';
+import ContractOverviewTab from '@/components/contract-detail/ContractOverviewTab';
 
-type TabType = 'overview' | 'contracts' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
+type TabType = 'overview' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
 
-export default function ProjectDetailScreen() {
+export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const project = useProjectById(id);
+  const contract = useContractById(id);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
-  if (!project) {
+  if (!contract) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -40,7 +39,7 @@ export default function ProjectDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: project.name,
+          title: contract.title,
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -69,20 +68,6 @@ export default function ProjectDetailScreen() {
             ]}
           >
             Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'contracts' && styles.tabActive]}
-          onPress={() => setActiveTab('contracts')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'contracts' && styles.tabTextActive,
-            ]}
-          >
-            Contracte
           </Text>
         </TouchableOpacity>
 
@@ -162,13 +147,12 @@ export default function ProjectDetailScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {activeTab === 'overview' && <OverviewTab project={project} />}
-        {activeTab === 'contracts' && <ContractsTab projectId={project.id} />}
-        {activeTab === 'tasks' && <TasksTab projectId={project.id} />}
-        {activeTab === 'payments' && <PaymentsTab projectId={project.id} />}
-        {activeTab === 'files' && <FilesTab projectId={project.id} />}
-        {activeTab === 'chat' && <ChatTab projectId={project.id} />}
-        {activeTab === 'procurement' && <ProcurementTab projectId={project.id} />}
+        {activeTab === 'overview' && <ContractOverviewTab contract={contract} />}
+        {activeTab === 'tasks' && <TasksTab contractId={contract.id} />}
+        {activeTab === 'payments' && <PaymentsTab contractId={contract.id} />}
+        {activeTab === 'files' && <FilesTab contractId={contract.id} />}
+        {activeTab === 'chat' && <ChatTab contractId={contract.id} />}
+        {activeTab === 'procurement' && <ProcurementTab contractId={contract.id} />}
       </ScrollView>
     </View>
   );

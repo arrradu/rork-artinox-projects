@@ -10,12 +10,13 @@ import {
   Platform,
 } from 'react-native';
 import { Send, MessageCircle, StickyNote } from 'lucide-react-native';
-import { useChatMessagesByProjectId, useSalesNotesByProjectId, useApp } from '@/contexts/AppContext';
+import { useChatMessagesByProjectId, useChatMessagesByContractId, useSalesNotesByProjectId, useSalesNotesByContractId, useApp } from '@/contexts/AppContext';
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 
 interface ChatTabProps {
-  projectId: string;
+  projectId?: string;
+  contractId?: string;
 }
 
 function formatMessageTime(dateString: string): string {
@@ -34,9 +35,14 @@ function formatMessageTime(dateString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function ChatTab({ projectId }: ChatTabProps) {
-  const messages = useChatMessagesByProjectId(projectId);
-  const salesNotes = useSalesNotesByProjectId(projectId);
+export default function ChatTab({ projectId, contractId }: ChatTabProps) {
+  const projectMessages = useChatMessagesByProjectId(projectId);
+  const contractMessages = useChatMessagesByContractId(contractId);
+  const messages = contractId ? contractMessages : projectMessages;
+  
+  const projectSalesNotes = useSalesNotesByProjectId(projectId);
+  const contractSalesNotes = useSalesNotesByContractId(contractId);
+  const salesNotes = contractId ? contractSalesNotes : projectSalesNotes;
   const { createChatMessage, createSalesNote, currentUser } = useApp();
   const [messageText, setMessageText] = useState('');
   const [noteText, setNoteText] = useState('');
