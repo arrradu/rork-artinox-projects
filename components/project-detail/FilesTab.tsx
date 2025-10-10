@@ -12,6 +12,7 @@ import {
   Linking,
   Platform,
   ActionSheetIOS,
+  ActivityIndicator,
 } from 'react-native';
 import { 
   FileText, 
@@ -24,15 +25,27 @@ import {
   File as FileIcon,
   MoreVertical,
   ExternalLink,
+  Upload,
 } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useFilesByProjectId, useApp } from '@/contexts/AppContext';
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 import type { FileTag, ProjFile } from '@/types';
+import { filesApi } from '@/api/filesApi';
 
 interface FilesTabProps {
   projectId: string;
+  contractId?: string;
+}
+
+interface SelectedFileInfo {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size: number;
 }
 
 const FILE_TAG_LABELS: Record<FileTag, string> = {
@@ -116,66 +129,183 @@ function formatDate(isoString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function FilesTab({ projectId }: FilesTabProps) {
+export default function FilesTab({ projectId, contractId }: FilesTabProps) {
   const files = useFilesByProjectId(projectId);
   const { createFile, deleteFile, currentUser } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<ProjFile | null>(null);
+  const [selectedFileInfo, setSelectedFileInfo] = useState<SelectedFileInfo | null>(null);
   const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
   const [tag, setTag] = useState<FileTag>('altul');
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const detectMimeType = (filename: string): string => {
-    const ext = getFileExtension(filename);
-    const mimeTypes: Record<string, string> = {
-      pdf: 'application/pdf',
-      doc: 'application/msword',
-      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      xls: 'application/vnd.ms-excel',
-      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ppt: 'application/vnd.ms-powerpoint',
-      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      zip: 'application/zip',
-      dwg: 'application/acad',
-      dxf: 'application/dxf',
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
+  const handlePickFile = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '*/*';
+        input.onchange = async (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const file = target.files?.[0];
+          if (file) {
+            setSelectedFileInfo({
+              uri: URL.createObjectURL(file),
+              name: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              size: file.size,
+            });
+            setName(file.name);
+          }
+        };
+        input.click();
+      } else {
+        Alert.alert(
+          'Alege tip fișier',
+          'Ce tip de fișier dorești să încarci?',
+          [
+            {
+              text: 'Document',
+              onPress: async () => {
+                const result = await DocumentPicker.getDocumentAsync({
+                  type: '*/*',
+                  copyToCacheDirectory: true,
+                });
+                
+                if (!result.canceled && result.assets && result.assets.length > 0) {
+                  const asset = result.assets[0];
+                  setSelectedFileInfo({
+                    uri: asset.uri,
+                    name: asset.name,
+                    mimeType: asset.mimeType || 'application/octet-stream',
+                    size: asset.size || 0,
+                  });
+                  setName(asset.name);
+                }
+              },
+            },
+            {
+              text: 'Imagine',
+              onPress: async () => {
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: 'images',
+                  allowsEditing: false,
+                  quality: 1,
+                });
+                
+                if (!result.canceled && result.assets && result.assets.length > 0) {
+                  const asset = result.assets[0];
+                  const fileName = asset.uri.split('/').pop() || 'image.jpg';
+                  setSelectedFileInfo({
+                    uri: asset.uri,
+                    name: fileName,
+                    mimeType: asset.mimeType || 'image/jpeg',
+                    size: asset.fileSize || 0,
+                  });
+                  setName(fileName);
+                }
+              },
+            },
+            {
+              text: 'Anulează',
+              style: 'cancel',
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error picking file:', error);
+      Alert.alert('Eroare', 'Nu s-a putut selecta fișierul');
+    }
   };
 
-  const handleAddFile = async () => {
-    if (!name.trim() || !url.trim()) {
-      Alert.alert('Eroare', 'Numele și URL-ul sunt obligatorii');
+  const handleUploadFile = async () => {
+    if (!selectedFileInfo) {
+      Alert.alert('Eroare', 'Te rog selectează un fișier');
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert('Eroare', 'Numele fișierului este obligatoriu');
       return;
     }
 
     setLoading(true);
+    setUploadProgress(0);
+
     try {
-      const mimeType = detectMimeType(name);
+      console.log('[FilesTab] Starting file upload', {
+        name: name.trim(),
+        mimeType: selectedFileInfo.mimeType,
+        size: selectedFileInfo.size,
+      });
+
+      setUploadProgress(20);
+      const { uploadUrl, fileUrl } = await filesApi.getPresignedUpload(
+        projectId,
+        name.trim(),
+        selectedFileInfo.mimeType
+      );
+
+      console.log('[FilesTab] Got presigned URL', { uploadUrl, fileUrl });
+
+      setUploadProgress(40);
+      
+      if (Platform.OS === 'web') {
+        const response = await fetch(selectedFileInfo.uri);
+        const blob = await response.blob();
+        await filesApi.uploadFile(uploadUrl, blob);
+      } else {
+        const response = await fetch(selectedFileInfo.uri);
+        const blob = await response.blob();
+        await filesApi.uploadFile(uploadUrl, blob);
+      }
+
+      console.log('[FilesTab] File uploaded to storage');
+
+      setUploadProgress(70);
+      await filesApi.notifyUploaded({
+        project_id: projectId,
+        contract_id: contractId,
+        name: name.trim(),
+        url: fileUrl,
+        mime_type: selectedFileInfo.mimeType,
+        size_bytes: selectedFileInfo.size,
+        tag,
+        uploader_id: currentUser.id,
+      });
+
+      console.log('[FilesTab] Server notified');
+
+      setUploadProgress(90);
       await createFile({
         project_id: projectId,
+        contract_id: contractId,
         name: name.trim(),
-        url: url.trim(),
+        url: fileUrl,
         tag,
-        mime_type: mimeType,
+        size: selectedFileInfo.size,
+        mime_type: selectedFileInfo.mimeType,
         uploader: currentUser.name,
       });
-      
+
+      console.log('[FilesTab] File record created in database');
+
+      setUploadProgress(100);
       setName('');
-      setUrl('');
+      setSelectedFileInfo(null);
       setTag('altul');
       setModalVisible(false);
+      
+      Alert.alert('Succes', 'Fișierul a fost încărcat cu succes');
     } catch (error) {
-      console.error('Error creating file:', error);
-      Alert.alert('Eroare', 'Nu s-a putut adăuga fișierul');
+      console.error('[FilesTab] Error uploading file:', error);
+      Alert.alert('Eroare', 'Nu s-a putut încărca fișierul. Te rog încearcă din nou.');
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -238,7 +368,7 @@ export default function FilesTab({ projectId }: FilesTabProps) {
   };
 
   const handleFileMenu = (file: ProjFile) => {
-    const canDelete = currentUser.name === file.uploader || currentUser.role === 'admin';
+    const canDelete = currentUser.role === 'admin';
     
     if (Platform.OS === 'ios') {
       const options = ['Anulează', 'Distribuie', 'Deschide'];
@@ -329,6 +459,40 @@ export default function FilesTab({ projectId }: FilesTabProps) {
               </View>
 
               <ScrollView style={styles.modalBody}>
+                <TouchableOpacity
+                  style={styles.filePickerButton}
+                  onPress={handlePickFile}
+                  disabled={loading}
+                >
+                  <Upload size={24} color={colors.primary} />
+                  <Text style={styles.filePickerButtonText}>
+                    {selectedFileInfo ? 'Schimbă fișierul' : 'Alege fișier'}
+                  </Text>
+                </TouchableOpacity>
+
+                {selectedFileInfo && (
+                  <View style={styles.selectedFileInfo}>
+                    <View style={styles.selectedFileRow}>
+                      <Text style={styles.selectedFileLabel}>Fișier:</Text>
+                      <Text style={styles.selectedFileValue} numberOfLines={1}>
+                        {selectedFileInfo.name}
+                      </Text>
+                    </View>
+                    <View style={styles.selectedFileRow}>
+                      <Text style={styles.selectedFileLabel}>Dimensiune:</Text>
+                      <Text style={styles.selectedFileValue}>
+                        {formatFileSize(selectedFileInfo.size)}
+                      </Text>
+                    </View>
+                    <View style={styles.selectedFileRow}>
+                      <Text style={styles.selectedFileLabel}>Tip:</Text>
+                      <Text style={styles.selectedFileValue} numberOfLines={1}>
+                        {selectedFileInfo.mimeType}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
                 <Text style={styles.label}>Nume fișier *</Text>
                 <TextInput
                   style={styles.input}
@@ -336,17 +500,7 @@ export default function FilesTab({ projectId }: FilesTabProps) {
                   onChangeText={setName}
                   placeholder="ex: Contract semnat.pdf"
                   placeholderTextColor={colors.textSecondary}
-                />
-
-                <Text style={styles.label}>URL *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={url}
-                  onChangeText={setUrl}
-                  placeholder="https://example.com/file.pdf"
-                  placeholderTextColor={colors.textSecondary}
-                  autoCapitalize="none"
-                  keyboardType="url"
+                  editable={!loading}
                 />
 
                 <Text style={styles.label}>Tag</Text>
@@ -374,21 +528,44 @@ export default function FilesTab({ projectId }: FilesTabProps) {
               </ScrollView>
 
               <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonSecondary]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.buttonSecondaryText}>Anulează</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonPrimary]}
-                  onPress={handleAddFile}
-                  disabled={loading}
-                >
-                  <Text style={styles.buttonPrimaryText}>
-                    {loading ? 'Se adaugă...' : 'Adaugă'}
-                  </Text>
-                </TouchableOpacity>
+                {loading && uploadProgress > 0 && (
+                  <View style={styles.progressContainer}>
+                    <View style={styles.progressBar}>
+                      <View 
+                        style={[
+                          styles.progressFill, 
+                          { width: `${uploadProgress}%` }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.progressText}>{uploadProgress}%</Text>
+                  </View>
+                )}
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonSecondary]}
+                    onPress={() => {
+                      setModalVisible(false);
+                      setSelectedFileInfo(null);
+                      setName('');
+                      setTag('altul');
+                    }}
+                    disabled={loading}
+                  >
+                    <Text style={styles.buttonSecondaryText}>Anulează</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
+                    onPress={handleUploadFile}
+                    disabled={loading || !selectedFileInfo}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Text style={styles.buttonPrimaryText}>Încarcă</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -490,6 +667,40 @@ export default function FilesTab({ projectId }: FilesTabProps) {
             </View>
 
             <ScrollView style={styles.modalBody}>
+              <TouchableOpacity
+                style={styles.filePickerButton}
+                onPress={handlePickFile}
+                disabled={loading}
+              >
+                <Upload size={24} color={colors.primary} />
+                <Text style={styles.filePickerButtonText}>
+                  {selectedFileInfo ? 'Schimbă fișierul' : 'Alege fișier'}
+                </Text>
+              </TouchableOpacity>
+
+              {selectedFileInfo && (
+                <View style={styles.selectedFileInfo}>
+                  <View style={styles.selectedFileRow}>
+                    <Text style={styles.selectedFileLabel}>Fișier:</Text>
+                    <Text style={styles.selectedFileValue} numberOfLines={1}>
+                      {selectedFileInfo.name}
+                    </Text>
+                  </View>
+                  <View style={styles.selectedFileRow}>
+                    <Text style={styles.selectedFileLabel}>Dimensiune:</Text>
+                    <Text style={styles.selectedFileValue}>
+                      {formatFileSize(selectedFileInfo.size)}
+                    </Text>
+                  </View>
+                  <View style={styles.selectedFileRow}>
+                    <Text style={styles.selectedFileLabel}>Tip:</Text>
+                    <Text style={styles.selectedFileValue} numberOfLines={1}>
+                      {selectedFileInfo.mimeType}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               <Text style={styles.label}>Nume fișier *</Text>
               <TextInput
                 style={styles.input}
@@ -497,17 +708,7 @@ export default function FilesTab({ projectId }: FilesTabProps) {
                 onChangeText={setName}
                 placeholder="ex: Contract semnat.pdf"
                 placeholderTextColor={colors.textSecondary}
-              />
-
-              <Text style={styles.label}>URL *</Text>
-              <TextInput
-                style={styles.input}
-                value={url}
-                onChangeText={setUrl}
-                placeholder="https://example.com/file.pdf"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-                keyboardType="url"
+                editable={!loading}
               />
 
               <Text style={styles.label}>Tag</Text>
@@ -535,21 +736,44 @@ export default function FilesTab({ projectId }: FilesTabProps) {
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonSecondary]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.buttonSecondaryText}>Anulează</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonPrimary]}
-                onPress={handleAddFile}
-                disabled={loading}
-              >
-                <Text style={styles.buttonPrimaryText}>
-                  {loading ? 'Se adaugă...' : 'Adaugă'}
-                </Text>
-              </TouchableOpacity>
+              {loading && uploadProgress > 0 && (
+                <View style={styles.progressContainer}>
+                  <View style={styles.progressBar}>
+                    <View 
+                      style={[
+                        styles.progressFill, 
+                        { width: `${uploadProgress}%` }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.progressText}>{uploadProgress}%</Text>
+                </View>
+              )}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonSecondary]}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSelectedFileInfo(null);
+                    setName('');
+                    setTag('altul');
+                  }}
+                  disabled={loading}
+                >
+                  <Text style={styles.buttonSecondaryText}>Anulează</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
+                  onPress={handleUploadFile}
+                  disabled={loading || !selectedFileInfo}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.buttonPrimaryText}>Încarcă</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -778,11 +1002,78 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   modalFooter: {
-    flexDirection: 'row',
-    gap: 12,
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  filePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: colors.background,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderStyle: 'dashed' as const,
+    borderRadius: 12,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  filePickerButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.primary,
+  },
+  selectedFileInfo: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  selectedFileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedFileLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    width: 100,
+  },
+  selectedFileValue: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+  },
+  progressContainer: {
+    marginBottom: 16,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: colors.background,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   button: {
     flex: 1,
