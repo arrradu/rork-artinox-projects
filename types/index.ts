@@ -19,24 +19,54 @@ export interface ProjectMember {
 
 export type ProjectStatus = 'nou' | 'in_lucru' | 'livrare' | 'finalizat' | 'anulat';
 
+export type ContractStatus = 'nou' | 'in_lucru' | 'livrare' | 'finalizat';
+
 export type TaskStatus = 'todo' | 'doing' | 'done';
 
 export type PaymentStatus = 'neplatit' | 'partial' | 'platit';
 
+export interface Client {
+  id: string;
+  nume: string;
+  email?: string;
+  telefon?: string;
+  adresa?: string;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
-  title: string;
-  client_name: string;
-  client_email?: string;
-  value_total?: number;
+  client_id: string;
+  name: string;
   status: ProjectStatus;
-  access: Record<Department, boolean>;
+  created_by: string;
   created_at: string;
+  start_date?: string;
+  total_value_eur: number;
+  paid_eur: number;
+  remaining_eur: number;
+  access: Record<Department, boolean>;
+}
+
+export interface Contract {
+  id: string;
+  project_id: string;
+  title: string;
+  code?: string;
+  description?: string;
+  start_date?: string;
+  value_eur: number;
+  paid_eur: number;
+  remaining_eur: number;
+  status: ContractStatus;
+  created_at: string;
+  created_by: string;
 }
 
 export interface Task {
   id: string;
   project_id: string;
+  contract_id?: string;
   title: string;
   assignee: string;
   due_date?: string;
@@ -48,6 +78,7 @@ export interface Task {
 export interface Payment {
   id: string;
   project_id: string;
+  contract_id?: string;
   label: string;
   amount: number;
   due_date?: string;
@@ -62,16 +93,34 @@ export interface Payment {
   attachment_url?: string;
 }
 
+export interface CreateClientInput {
+  nume: string;
+  email?: string;
+  telefon?: string;
+  adresa?: string;
+}
+
 export interface CreateProjectInput {
-  title: string;
-  client_name: string;
-  client_email?: string;
-  value_total?: number;
+  client_id: string;
+  name: string;
   status?: ProjectStatus;
+  start_date?: string;
+  comment?: string;
+}
+
+export interface CreateContractInput {
+  project_id: string;
+  title: string;
+  code?: string;
+  description?: string;
+  start_date?: string;
+  value_eur: number;
+  status?: ContractStatus;
 }
 
 export interface CreateTaskInput {
   project_id: string;
+  contract_id?: string;
   title: string;
   assignee: string;
   due_date?: string;
@@ -80,6 +129,7 @@ export interface CreateTaskInput {
 
 export interface CreatePaymentInput {
   project_id: string;
+  contract_id?: string;
   label: string;
   amount: number;
   due_date?: string;
@@ -87,13 +137,27 @@ export interface CreatePaymentInput {
   comment?: string;
 }
 
+export interface UpdateClientInput {
+  nume?: string;
+  email?: string;
+  telefon?: string;
+  adresa?: string;
+}
+
 export interface UpdateProjectInput {
-  title?: string;
-  client_name?: string;
-  client_email?: string;
-  value_total?: number;
+  name?: string;
   status?: ProjectStatus;
+  start_date?: string;
   access?: Partial<Record<Department, boolean>>;
+}
+
+export interface UpdateContractInput {
+  title?: string;
+  code?: string;
+  description?: string;
+  start_date?: string;
+  value_eur?: number;
+  status?: ContractStatus;
 }
 
 export interface UpdateTaskInput {
@@ -119,6 +183,7 @@ export type FileTag = 'cerere' | 'contract' | 'desen' | 'poza' | 'altul';
 export interface ProjFile {
   id: string;
   project_id: string;
+  contract_id?: string;
   name: string;
   url: string;
   tag: FileTag;
@@ -131,6 +196,7 @@ export interface ProjFile {
 export interface ChatMessage {
   id: string;
   project_id: string;
+  contract_id?: string;
   author: string;
   text: string;
   reply_to_id?: string;
@@ -140,6 +206,7 @@ export interface ChatMessage {
 export interface SalesNote {
   id: string;
   project_id: string;
+  contract_id?: string;
   author: string;
   text: string;
   created_at: string;
@@ -147,6 +214,7 @@ export interface SalesNote {
 
 export interface CreateFileInput {
   project_id: string;
+  contract_id?: string;
   name: string;
   url: string;
   tag: FileTag;
@@ -157,6 +225,7 @@ export interface CreateFileInput {
 
 export interface CreateChatMessageInput {
   project_id: string;
+  contract_id?: string;
   author: string;
   text: string;
   reply_to_id?: string;
@@ -164,6 +233,7 @@ export interface CreateChatMessageInput {
 
 export interface CreateSalesNoteInput {
   project_id: string;
+  contract_id?: string;
   author: string;
   text: string;
 }
@@ -184,6 +254,7 @@ export interface TransportInfo {
 export interface ProcItem {
   id: string;
   project_id: string;
+  contract_id?: string;
   name: string;
   qty: number;
   unit: ProcUnit;
@@ -201,6 +272,7 @@ export interface ProcItem {
 
 export interface CreateProcItemInput {
   project_id: string;
+  contract_id?: string;
   name: string;
   qty: number;
   unit: ProcUnit;
