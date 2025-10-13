@@ -144,13 +144,15 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
           description={isAdmin ? 'Apasă + pentru a adăuga primul contract' : 'Nu există contracte în acest proiect'}
         />
       ) : (
-        <FlatList
-          data={contracts}
-          keyExtractor={(item) => item.id}
-          renderItem={renderContract}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.listWrapper}>
+          <FlatList
+            data={contracts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderContract}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       )}
 
       {isAdmin && (
@@ -300,7 +302,10 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    gap: 12,
+  },
+  listWrapper: {
+    minHeight: 200,
   },
   listContent: {
     paddingBottom: 80,
