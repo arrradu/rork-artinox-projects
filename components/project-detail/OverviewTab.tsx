@@ -4,6 +4,7 @@ import { Mail, Lock, Unlock } from 'lucide-react-native';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
 import { useApp, useProjectFinancials } from '@/contexts/AppContext';
+import { formatDateToDisplay } from '@/constants/formatters';
 import colors from '@/constants/colors';
 import type { Project, Department } from '@/types';
 
@@ -23,8 +24,12 @@ const departmentLabels: Record<Department, string> = {
 };
 
 export default function OverviewTab({ project }: OverviewTabProps) {
-  const { toggleDepartmentAccess } = useApp();
+  const { toggleDepartmentAccess, clients, contracts } = useApp();
   const { total, paid, remaining } = useProjectFinancials(project.id);
+  
+  const client = clients.find(c => c.id === project.client_id);
+  const projectContracts = contracts.filter(c => c.project_id === project.id);
+  const contractsCount = projectContracts.length;
 
   return (
     <View style={styles.container}>
@@ -39,35 +44,49 @@ export default function OverviewTab({ project }: OverviewTabProps) {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Client</Text>
-            <Text style={styles.infoValue}>{project.client_name}</Text>
+            <Text style={styles.infoValue}>{client?.name || 'N/A'}</Text>
           </View>
 
-          {project.client_email && (
+          {client?.email && (
             <View style={styles.infoRow}>
               <Mail size={16} color={colors.textSecondary} />
-              <Text style={styles.infoValue}>{project.client_email}</Text>
+              <Text style={styles.infoValue}>{client.email}</Text>
             </View>
           )}
 
-          {project.value_total !== undefined && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Valoare totală</Text>
-                <Money amount={total} size="medium" color={colors.text} />
-              </View>
+          <View style={styles.divider} />
 
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Plătit</Text>
-                <Money amount={paid} size="medium" color={colors.success} />
-              </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Creat de</Text>
+            <Text style={styles.infoValue}>{project.created_by}</Text>
+          </View>
 
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Rest de încasat</Text>
-                <Money amount={remaining} size="medium" color={colors.primary} />
-              </View>
-            </>
-          )}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Data creării</Text>
+            <Text style={styles.infoValue}>{formatDateToDisplay(project.created_at)}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Contracte</Text>
+            <Text style={styles.infoValue}>{contractsCount}</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Valoare totală</Text>
+            <Money amount={total} size="medium" color={colors.text} />
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Plătit</Text>
+            <Money amount={paid} size="medium" color={colors.success} />
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Rest de încasat</Text>
+            <Money amount={remaining} size="medium" color={colors.primary} />
+          </View>
         </View>
       </View>
 
