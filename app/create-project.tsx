@@ -9,32 +9,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
-import { formatDateToISO } from '@/constants/formatters';
 import colors from '@/constants/colors';
 import type { ProjectStatus } from '@/types';
-import { ChevronDown, Plus } from 'lucide-react-native';
 
 export default function CreateProjectScreen() {
   const router = useRouter();
-  const { createProject, createClient, clients } = useApp();
+  const { createProject } = useApp();
 
-  const [name, setName] = useState('');
-  const [clientId, setClientId] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [title, setTitle] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [valueTotal, setValueTotal] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('nou');
-  const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showClientModal, setShowClientModal] = useState(false);
-  const [showNewClientModal, setShowNewClientModal] = useState(false);
-
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientEmail, setNewClientEmail] = useState('');
-  const [newClientPhone, setNewClientPhone] = useState('');
-  const [newClientAddress, setNewClientAddress] = useState('');
 
   const statusOptions: { value: ProjectStatus; label: string }[] = [
     { value: 'nou', label: 'Nou' },
@@ -44,47 +34,23 @@ export default function CreateProjectScreen() {
     { value: 'anulat', label: 'Anulat' },
   ];
 
-  const selectedClient = clients.find(c => c.id === clientId);
-
   const validateForm = () => {
-    if (!name.trim()) {
-      Alert.alert('Eroare', 'Numele proiectului este obligatoriu');
+    if (!title.trim()) {
+      Alert.alert('Eroare', 'Titlul este obligatoriu');
       return false;
     }
 
-    if (!clientId) {
-      Alert.alert('Eroare', 'Selectați un client');
+    if (!clientName.trim()) {
+      Alert.alert('Eroare', 'Numele clientului este obligatoriu');
+      return false;
+    }
+
+    if (valueTotal && parseFloat(valueTotal) < 0) {
+      Alert.alert('Eroare', 'Valoarea trebuie să fie pozitivă');
       return false;
     }
 
     return true;
-  };
-
-  const handleCreateNewClient = async () => {
-    if (!newClientName.trim()) {
-      Alert.alert('Eroare', 'Numele clientului este obligatoriu');
-      return;
-    }
-
-    try {
-      const client = await createClient({
-        nume: newClientName.trim(),
-        email: newClientEmail.trim() || undefined,
-        telefon: newClientPhone.trim() || undefined,
-        adresa: newClientAddress.trim() || undefined,
-      });
-
-      setClientId(client.id);
-      setShowNewClientModal(false);
-      setNewClientName('');
-      setNewClientEmail('');
-      setNewClientPhone('');
-      setNewClientAddress('');
-      Alert.alert('Succes', 'Client creat cu succes');
-    } catch (error) {
-      console.error('Error creating client:', error);
-      Alert.alert('Eroare', 'Nu s-a putut crea clientul');
-    }
   };
 
   const handleSubmit = async () => {
@@ -94,14 +60,14 @@ export default function CreateProjectScreen() {
 
     try {
       await createProject({
-        client_id: clientId,
-        name: name.trim(),
+        title: title.trim(),
+        client_name: clientName.trim(),
+        client_email: clientEmail.trim() || undefined,
+        value_total: valueTotal ? parseFloat(valueTotal) : undefined,
         status,
-        start_date: startDate ? formatDateToISO(startDate) : undefined,
-        comment: comment.trim() || undefined,
       });
 
-      Alert.alert('Succes', 'Proiect creat cu succes', [
+      Alert.alert('Success', 'Proiect creat cu succes', [
         {
           text: 'OK',
           onPress: () => router.back(),
@@ -128,45 +94,52 @@ export default function CreateProjectScreen() {
         <View style={styles.form}>
           <View style={styles.field}>
             <Text style={styles.label}>
-              Nume proiect <Text style={styles.required}>*</Text>
+              Titlu proiect <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="ex: Proiect Balustrade Construct Design"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="ex: Balustradă Inox Scară"
               placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>
-              Client <Text style={styles.required}>*</Text>
+              Nume client <Text style={styles.required}>*</Text>
             </Text>
-            <TouchableOpacity
-              style={styles.selectButton}
-              onPress={() => setShowClientModal(true)}
-            >
-              <Text
-                style={[
-                  styles.selectButtonText,
-                  !selectedClient && styles.selectButtonPlaceholder,
-                ]}
-              >
-                {selectedClient ? selectedClient.nume : 'Selectați client'}
-              </Text>
-              <ChevronDown size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              value={clientName}
+              onChangeText={setClientName}
+              placeholder="ex: SC Construct Design SRL"
+              placeholderTextColor={colors.textTertiary}
+            />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Data începerii (DD-MM-YYYY)</Text>
+            <Text style={styles.label}>Email client</Text>
             <TextInput
               style={styles.input}
-              value={startDate}
-              onChangeText={setStartDate}
-              placeholder="ex: 15-01-2025"
+              value={clientEmail}
+              onChangeText={setClientEmail}
+              placeholder="ex: contact@client.ro"
               placeholderTextColor={colors.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Valoare totală (EUR)</Text>
+            <TextInput
+              style={styles.input}
+              value={valueTotal}
+              onChangeText={setValueTotal}
+              placeholder="ex: 15000"
+              placeholderTextColor={colors.textTertiary}
+              keyboardType="decimal-pad"
             />
           </View>
 
@@ -194,20 +167,6 @@ export default function CreateProjectScreen() {
               ))}
             </View>
           </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Comentariu</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={comment}
-              onChangeText={setComment}
-              placeholder="Notițe despre proiect..."
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
         </View>
       </ScrollView>
 
@@ -230,143 +189,6 @@ export default function CreateProjectScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      <Modal
-        visible={showClientModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowClientModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowClientModal(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selectați client</Text>
-
-            <TouchableOpacity
-              style={styles.newClientButton}
-              onPress={() => {
-                setShowClientModal(false);
-                setShowNewClientModal(true);
-              }}
-            >
-              <Plus size={20} color={colors.primary} />
-              <Text style={styles.newClientButtonText}>Client nou</Text>
-            </TouchableOpacity>
-
-            <ScrollView style={styles.clientList}>
-              {clients.map((client) => (
-                <TouchableOpacity
-                  key={client.id}
-                  style={[
-                    styles.clientOption,
-                    clientId === client.id && styles.clientOptionActive,
-                  ]}
-                  onPress={() => {
-                    setClientId(client.id);
-                    setShowClientModal(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.clientOptionText,
-                      clientId === client.id && styles.clientOptionTextActive,
-                    ]}
-                  >
-                    {client.nume}
-                  </Text>
-                  {client.email && (
-                    <Text style={styles.clientOptionEmail}>{client.email}</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={showNewClientModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowNewClientModal(false)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Client nou</Text>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Nume <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={newClientName}
-                onChangeText={setNewClientName}
-                placeholder="ex: SC Construct Design SRL"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={newClientEmail}
-                onChangeText={setNewClientEmail}
-                placeholder="ex: contact@client.ro"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Telefon</Text>
-              <TextInput
-                style={styles.input}
-                value={newClientPhone}
-                onChangeText={setNewClientPhone}
-                placeholder="ex: +40 21 123 4567"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="phone-pad"
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Adresă</Text>
-              <TextInput
-                style={styles.input}
-                value={newClientAddress}
-                onChangeText={setNewClientAddress}
-                placeholder="ex: Str. Exemplu nr. 10, București"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowNewClientModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Anulează</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleCreateNewClient}
-              >
-                <Text style={styles.submitButtonText}>Creează</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -405,28 +227,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: colors.text,
-  },
-  textArea: {
-    minHeight: 100,
-    paddingTop: 12,
-  },
-  selectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  selectButtonText: {
-    fontSize: 15,
-    color: colors.text,
-  },
-  selectButtonPlaceholder: {
-    color: colors.textTertiary,
   },
   statusGrid: {
     flexDirection: 'row',
@@ -489,71 +289,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: colors.surface,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600' as const,
-    color: colors.text,
-    marginBottom: 16,
-  },
-  newClientButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    marginBottom: 16,
-  },
-  newClientButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: colors.primary,
-  },
-  clientList: {
-    maxHeight: 400,
-  },
-  clientOption: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 8,
-    backgroundColor: colors.background,
-  },
-  clientOptionActive: {
-    backgroundColor: colors.primary,
-  },
-  clientOptionText: {
-    fontSize: 15,
-    fontWeight: '500' as const,
-    color: colors.text,
-  },
-  clientOptionTextActive: {
-    color: '#FFFFFF',
-  },
-  clientOptionEmail: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
   },
 });

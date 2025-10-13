@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Search, Plus, FolderOpen, Filter } from 'lucide-react-native';
-import { useApp, useProjectFinancials, useClientById } from '@/contexts/AppContext';
+import { useApp, useProjectFinancials } from '@/contexts/AppContext';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
 import EmptyState from '@/components/EmptyState';
@@ -21,7 +21,6 @@ import type { Project } from '@/types';
 function ProjectCard({ project }: { project: Project }) {
   const router = useRouter();
   const { remaining } = useProjectFinancials(project.id);
-  const client = useClientById(project.client_id);
 
   return (
     <TouchableOpacity
@@ -31,16 +30,16 @@ function ProjectCard({ project }: { project: Project }) {
     >
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {project.name}
+          {project.title}
         </Text>
         <TagStatus type="project" status={project.status} size="small" />
       </View>
 
       <Text style={styles.cardClient} numberOfLines={1}>
-        {client?.nume || 'Client necunoscut'}
+        {project.client_name}
       </Text>
 
-      {project.total_value_eur > 0 && (
+      {project.value_total !== undefined && (
         <View style={styles.cardFooter}>
           <Text style={styles.cardLabel}>Rest de încasat:</Text>
           <Money amount={remaining} size="small" color={colors.primary} />
@@ -54,7 +53,7 @@ type DateFilter = 'all' | 'current_month' | 'last_3_months' | 'current_year';
 
 export default function ProjectsScreen() {
   const router = useRouter();
-  const { projects, projectsLoading, currentUser } = useApp();
+  const { projects, projectsLoading } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -95,14 +94,13 @@ export default function ProjectsScreen() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(query)
+          p.title.toLowerCase().includes(query) ||
+          p.client_name.toLowerCase().includes(query)
       );
     }
 
     return filtered;
   }, [projects, searchQuery, dateFilter]);
-
-  const isAdmin = currentUser.role === 'admin';
 
   if (projectsLoading) {
     return (
@@ -117,6 +115,14 @@ export default function ProjectsScreen() {
       <Stack.Screen
         options={{
           title: 'Proiecte',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => router.push('/create-project' as any)}
+              style={styles.headerButton}
+            >
+              <Plus size={24} color={colors.primary} />
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -125,7 +131,7 @@ export default function ProjectsScreen() {
           <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Caută proiecte..."
+            placeholder="Caută proiecte sau clienți..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor={colors.textTertiary}
@@ -256,16 +262,6 @@ export default function ProjectsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      {isAdmin && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/create-project' as any)}
-          activeOpacity={0.8}
-        >
-          <Plus size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -280,6 +276,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+  },
+  headerButton: {
+    padding: 8,
+    marginRight: 8,
   },
   searchRow: {
     flexDirection: 'row',
@@ -321,7 +321,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     paddingTop: 8,
-    paddingBottom: 100,
   },
   card: {
     backgroundColor: colors.surface,
@@ -405,21 +404,5 @@ const styles = StyleSheet.create({
   filterOptionTextActive: {
     color: '#FFFFFF',
     fontWeight: '600' as const,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#4F46E5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
 });
