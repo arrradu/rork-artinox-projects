@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useContractById } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
 import colors from '@/constants/colors';
 import OverviewTab from '@/components/contract-detail/OverviewTab';
 import TasksTab from '@/components/contract-detail/TasksTab';
@@ -23,8 +23,10 @@ type TabType = 'overview' | 'tasks' | 'payments' | 'files' | 'chat' | 'procureme
 export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const contract = useContractById(id);
+  const { contracts } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  const contract = contracts.find(c => c.id === id);
 
   if (!contract) {
     return (
@@ -51,12 +53,7 @@ export default function ContractDetailScreen() {
         }}
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabBar}
-        contentContainerStyle={styles.tabBarContent}
-      >
+      <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
           onPress={() => setActiveTab('overview')}
@@ -140,7 +137,7 @@ export default function ContractDetailScreen() {
             Achiziții
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       <ScrollView
         style={styles.content}
@@ -174,16 +171,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   tabBar: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  tabBarContent: {
-    paddingHorizontal: 4,
-  },
   tab: {
+    flex: 1,
     paddingVertical: 16,
-    paddingHorizontal: 20,
     alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',

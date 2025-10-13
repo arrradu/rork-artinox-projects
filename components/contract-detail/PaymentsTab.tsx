@@ -1,15 +1,48 @@
 import React from 'react';
-import { View } from 'react-native';
-import PaymentsTab from '@/components/project-detail/PaymentsTab';
+import { View, Text, StyleSheet } from 'react-native';
+import { Wallet } from 'lucide-react-native';
+import { useApp } from '@/contexts/AppContext';
+import EmptyState from '@/components/EmptyState';
+import colors from '@/constants/colors';
 
-interface ContractPaymentsTabProps {
+interface PaymentsTabProps {
   contractId: string;
 }
 
-export default function ContractPaymentsTab({ contractId }: ContractPaymentsTabProps) {
+export default function PaymentsTab({ contractId }: PaymentsTabProps) {
+  const { payments } = useApp();
+  
+  const contractPayments = payments.filter(p => p.contract_id === contractId);
+
+  if (contractPayments.length === 0) {
+    return (
+      <EmptyState
+        icon={Wallet}
+        title="Nicio plată"
+        description="Acest contract nu are plăți configurate"
+      />
+    );
+  }
+
   return (
-    <View style={{ flex: 1 }}>
-      <PaymentsTab contractId={contractId} />
+    <View style={styles.container}>
+      <Text style={styles.placeholder}>
+        Plățile pentru contract vor fi afișate aici
+      </Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  placeholder: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+});

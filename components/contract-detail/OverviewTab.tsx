@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
-import { useContractFinancials } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
 import { formatDateToDisplay } from '@/constants/formatters';
 import colors from '@/constants/colors';
 import type { Contract } from '@/types';
@@ -12,7 +12,15 @@ interface OverviewTabProps {
 }
 
 export default function OverviewTab({ contract }: OverviewTabProps) {
-  const { total, paid, remaining } = useContractFinancials(contract.id);
+  const { payments } = useApp();
+  
+  const contractPayments = payments.filter(p => p.contract_id === contract.id);
+  const paid = contractPayments.reduce((sum, p) => {
+    if (p.status === 'platit') return sum + p.amount;
+    if (p.status === 'partial') return sum + (p.paid_amount || 0);
+    return sum;
+  }, 0);
+  const remaining = contract.value_eur - paid;
 
   return (
     <View style={styles.container}>
@@ -27,10 +35,32 @@ export default function OverviewTab({ contract }: OverviewTabProps) {
 
           {contract.code && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Cod</Text>
+              <Text style={styles.infoLabel}>Cod contract</Text>
               <Text style={styles.infoValue}>{contract.code}</Text>
             </View>
           )}
+
+          {contract.description && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.descriptionContainer}>
+                <Text style={styles.infoLabel}>Descriere</Text>
+                <Text style={styles.descriptionText}>{contract.description}</Text>
+              </View>
+            </>
+          )}
+
+          <View style={styles.divider} />
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Creat de</Text>
+            <Text style={styles.infoValue}>{contract.created_by}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Data creării</Text>
+            <Text style={styles.infoValue}>{formatDateToDisplay(contract.created_at)}</Text>
+          </View>
 
           {contract.start_date && (
             <View style={styles.infoRow}>
@@ -39,21 +69,11 @@ export default function OverviewTab({ contract }: OverviewTabProps) {
             </View>
           )}
 
-          {contract.description && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.descriptionRow}>
-                <Text style={styles.infoLabel}>Descriere</Text>
-                <Text style={styles.descriptionText}>{contract.description}</Text>
-              </View>
-            </>
-          )}
-
           <View style={styles.divider} />
-          
+
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Valoare totală</Text>
-            <Money amount={total} size="medium" color={colors.text} />
+            <Money amount={contract.value_eur} size="medium" color={colors.text} />
           </View>
 
           <View style={styles.infoRow}>
@@ -108,7 +128,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  descriptionRow: {
+  descriptionContainer: {
     gap: 8,
   },
   descriptionText: {

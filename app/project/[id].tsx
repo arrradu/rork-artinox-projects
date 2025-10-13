@@ -17,8 +17,9 @@ import PaymentsTab from '@/components/project-detail/PaymentsTab';
 import FilesTab from '@/components/project-detail/FilesTab';
 import ChatTab from '@/components/project-detail/ChatTab';
 import ProcurementTab from '@/components/project-detail/ProcurementTab';
+import ContractsListTab from '@/components/project-detail/ContractsListTab';
 
-type TabType = 'overview' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
+type TabType = 'overview' | 'contracts' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,7 +40,7 @@ export default function ProjectDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: project.title,
+          title: project.name,
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -63,6 +64,20 @@ export default function ProjectDetailScreen() {
             ]}
           >
             Overview
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'contracts' && styles.tabActive]}
+          onPress={() => setActiveTab('contracts')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'contracts' && styles.tabTextActive,
+            ]}
+          >
+            Contracte
           </Text>
         </TouchableOpacity>
 
@@ -143,6 +158,7 @@ export default function ProjectDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {activeTab === 'overview' && <OverviewTab project={project} />}
+        {activeTab === 'contracts' && <ContractsListTab projectId={project.id} />}
         {activeTab === 'tasks' && <TasksTab projectId={project.id} />}
         {activeTab === 'payments' && <PaymentsTab projectId={project.id} />}
         {activeTab === 'files' && <FilesTab projectId={project.id} />}
