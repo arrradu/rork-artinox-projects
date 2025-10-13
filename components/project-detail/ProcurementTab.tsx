@@ -160,7 +160,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
 
     try {
       await fakeApi.procItems.create({
-        project_id: projectId,
+        project_id: projectId ?? '',
         name: formData.name,
         qty,
         unit: formData.unit,

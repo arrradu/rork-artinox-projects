@@ -42,6 +42,8 @@ interface FilesTabProps extends EntityScope {
   currentUserId?: string;
 }
 
+export type { FilesTabProps };
+
 interface SelectedFileInfo {
   uri: string;
   name: string;
@@ -130,7 +132,7 @@ function formatDate(isoString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function FilesTab({ projectId, contractId, currentUserId }: FilesTabProps) {
+export default function FilesTab({ projectId, contractId }: FilesTabProps) {
   const scopeId = contractId ?? projectId ?? '';
   const files = useFilesByProjectId(scopeId);
   const { createFile, deleteFile, currentUser } = useApp();

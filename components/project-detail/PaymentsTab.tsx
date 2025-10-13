@@ -461,7 +461,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
           visible={addModalVisible}
           onClose={() => setAddModalVisible(false)}
           onSubmit={handleAddPayment}
-          projectId={scopeId}
+          projectId={scopeId ?? ''}
         />
       </View>
     );
@@ -545,7 +545,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onSubmit={handleAddPayment}
-        projectId={scopeId}
+        projectId={scopeId ?? ''}
       />
 
       <MarkPaidModal

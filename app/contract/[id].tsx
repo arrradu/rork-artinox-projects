@@ -150,10 +150,10 @@ export default function ContractDetailScreen() {
       >
         {activeTab === 'overview' && <ContractOverviewTab contract={contract} />}
         {activeTab === 'tasks' && <TasksTab contractId={contract.id} />}
-        {activeTab === 'payments' && <PaymentsTab contractId={contract.id} />}
-        {activeTab === 'files' && <FilesTab contractId={contract.id} />}
-        {activeTab === 'chat' && <ChatTab contractId={contract.id} />}
-        {activeTab === 'procurement' && <ProcurementTab contractId={contract.id} />}
+        {activeTab === 'payments' && <PaymentsTab projectId={contract.project_id} contractId={contract.id} />}
+        {activeTab === 'files' && <FilesTab projectId={contract.project_id} contractId={contract.id} />}
+        {activeTab === 'chat' && <ChatTab projectId={contract.project_id} contractId={contract.id} />}
+        {activeTab === 'procurement' && <ProcurementTab projectId={contract.project_id} contractId={contract.id} />}
       </ScrollView>
     </View>
   );

@@ -68,11 +68,11 @@ export default function ChatTab({ projectId, contractId, currentUserId }: ChatTa
     setLoading(true);
     try {
       await createChatMessage({
-        project_id: projectId ?? undefined,
-        contract_id: contractId ?? undefined,
-        author: currentUser.name ?? 'Necunoscut',
+        project_id: projectId,
+        contract_id: contractId,
+        author: currentUser.name,
         text: trimmedText,
-        reply_to_id: replyToId ?? undefined,
+        reply_to_id: replyToId,
       });
       
       setMessageText('');
@@ -91,9 +91,9 @@ export default function ChatTab({ projectId, contractId, currentUserId }: ChatTa
     setLoading(true);
     try {
       await createSalesNote({
-        project_id: projectId ?? undefined,
-        contract_id: contractId ?? undefined,
-        author: currentUser.name ?? 'Necunoscut',
+        project_id: projectId,
+        contract_id: contractId,
+        author: currentUser.name,
         text: trimmedNote,
       });
       
