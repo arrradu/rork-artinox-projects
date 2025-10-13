@@ -37,7 +37,7 @@ import type { FileTag, ProjFile } from '@/types';
 import { filesApi } from '@/api/filesApi';
 
 interface FilesTabProps {
-  projectId: string;
+  projectId?: string;
   contractId?: string;
 }
 
@@ -130,7 +130,8 @@ function formatDate(isoString: string): string {
 }
 
 export default function FilesTab({ projectId, contractId }: FilesTabProps) {
-  const files = useFilesByProjectId(projectId);
+  const effectiveId = contractId || projectId || '';
+  const files = useFilesByProjectId(effectiveId);
   const { createFile, deleteFile, currentUser } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
@@ -244,7 +245,7 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(20);
       const { uploadUrl, fileUrl } = await filesApi.getPresignedUpload(
-        projectId,
+        effectiveId,
         name.trim(),
         selectedFileInfo.mimeType
       );
@@ -267,7 +268,7 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(70);
       await filesApi.notifyUploaded({
-        project_id: projectId,
+        project_id: effectiveId,
         contract_id: contractId,
         name: name.trim(),
         url: fileUrl,
@@ -281,7 +282,7 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(90);
       await createFile({
-        project_id: projectId,
+        project_id: effectiveId,
         contract_id: contractId,
         name: name.trim(),
         url: fileUrl,

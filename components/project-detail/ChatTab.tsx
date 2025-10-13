@@ -15,7 +15,8 @@ import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 
 interface ChatTabProps {
-  projectId: string;
+  projectId?: string;
+  contractId?: string;
 }
 
 function formatMessageTime(dateString: string): string {
@@ -34,9 +35,10 @@ function formatMessageTime(dateString: string): string {
   return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
 }
 
-export default function ChatTab({ projectId }: ChatTabProps) {
-  const messages = useChatMessagesByProjectId(projectId);
-  const salesNotes = useSalesNotesByProjectId(projectId);
+export default function ChatTab({ projectId, contractId }: ChatTabProps) {
+  const effectiveId = contractId || projectId || '';
+  const messages = useChatMessagesByProjectId(effectiveId);
+  const salesNotes = useSalesNotesByProjectId(effectiveId);
   const { createChatMessage, createSalesNote, currentUser } = useApp();
   const [messageText, setMessageText] = useState('');
   const [noteText, setNoteText] = useState('');
@@ -60,7 +62,7 @@ export default function ChatTab({ projectId }: ChatTabProps) {
     setLoading(true);
     try {
       await createChatMessage({
-        project_id: projectId,
+        project_id: effectiveId,
         author: currentUser.name,
         text: messageText.trim(),
         reply_to_id: replyToId,
@@ -81,7 +83,7 @@ export default function ChatTab({ projectId }: ChatTabProps) {
     setLoading(true);
     try {
       await createSalesNote({
-        project_id: projectId,
+        project_id: effectiveId,
         author: currentUser.name,
         text: noteText.trim(),
       });
