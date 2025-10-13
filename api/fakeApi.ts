@@ -1,36 +1,65 @@
 import type { 
   Project, 
+  Contract,
   Task, 
   Payment, 
-  CreateProjectInput, 
+  CreateProjectInput,
+  CreateContractInput,
   CreateTaskInput, 
   CreatePaymentInput,
   UpdateProjectInput,
+  UpdateContractInput,
   UpdateTaskInput,
   UpdatePaymentInput,
   Department,
   ProjFile,
   ChatMessage,
-  SalesNote,
+  Attachment,
   CreateFileInput,
   CreateChatMessageInput,
-  CreateSalesNoteInput,
   ProcItem,
   CreateProcItemInput,
   UpdateProcItemInput,
   User,
   ProjectMember,
-  CreateProjectMemberInput
+  CreateProjectMemberInput,
+  Client,
+  CreateClientInput
 } from '@/types';
+
+let clients: Client[] = [
+  {
+    id: '1',
+    name: 'SC Construct Design SRL',
+    email: 'contact@constructdesign.ro',
+    phone: '+40 721 123 456',
+    created_at: '2024-12-01T10:00:00Z',
+  },
+  {
+    id: '2',
+    name: 'Popescu Ion',
+    email: 'ion.popescu@email.com',
+    phone: '+40 722 234 567',
+    created_at: '2024-12-15T14:00:00Z',
+  },
+  {
+    id: '3',
+    name: 'Restaurant La Mama',
+    email: 'comenzi@lamama.ro',
+    phone: '+40 723 345 678',
+    address: 'Str. Principală nr. 10, București',
+    created_at: '2024-11-20T09:00:00Z',
+  },
+];
 
 let projects: Project[] = [
   {
     id: '1',
-    title: 'Balustradă Inox Scară Interioară',
-    client_name: 'SC Construct Design SRL',
-    client_email: 'contact@constructdesign.ro',
-    value_total: 15000,
+    client_id: '1',
+    name: 'Proiect Balustrade Construct Design',
     status: 'in_lucru',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-05T10:00:00Z',
     access: {
       sales: true,
       produce: true,
@@ -41,15 +70,14 @@ let projects: Project[] = [
       achizitii: true,
       logistica: false,
     },
-    created_at: '2025-01-05T10:00:00Z',
   },
   {
     id: '2',
-    title: 'Poartă Automată Inox',
-    client_name: 'Popescu Ion',
-    client_email: 'ion.popescu@email.com',
-    value_total: 8500,
+    client_id: '2',
+    name: 'Poartă Automată Popescu',
     status: 'nou',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-08T14:30:00Z',
     access: {
       sales: true,
       produce: false,
@@ -60,15 +88,14 @@ let projects: Project[] = [
       achizitii: false,
       logistica: false,
     },
-    created_at: '2025-01-08T14:30:00Z',
   },
   {
     id: '3',
-    title: 'Mobilier Bucătărie Inox Restaurant',
-    client_name: 'Restaurant La Mama',
-    client_email: 'comenzi@lamama.ro',
-    value_total: 32000,
+    client_id: '3',
+    name: 'Mobilier Restaurant La Mama',
     status: 'livrare',
+    created_by: 'Maria Popescu',
+    created_at: '2024-12-10T09:00:00Z',
     access: {
       sales: true,
       produce: true,
@@ -79,6 +106,47 @@ let projects: Project[] = [
       achizitii: true,
       logistica: true,
     },
+  },
+];
+
+let contracts: Contract[] = [
+  {
+    id: '1',
+    project_id: '1',
+    title: 'Balustradă Inox Scară Interioară',
+    code: 'CNT-2025-001',
+    value_eur: 15000,
+    paid_eur: 6000,
+    remaining_eur: 9000,
+    status: 'in_lucru',
+    start_date: '2025-01-05T00:00:00Z',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-05T10:00:00Z',
+  },
+  {
+    id: '2',
+    project_id: '2',
+    title: 'Poartă Automată Inox',
+    code: 'CNT-2025-002',
+    value_eur: 8500,
+    paid_eur: 0,
+    remaining_eur: 8500,
+    status: 'nou',
+    start_date: '2025-01-08T00:00:00Z',
+    created_by: 'Andrei Ionescu',
+    created_at: '2025-01-08T14:30:00Z',
+  },
+  {
+    id: '3',
+    project_id: '3',
+    title: 'Mobilier Bucătărie Inox',
+    code: 'CNT-2024-089',
+    value_eur: 32000,
+    paid_eur: 26000,
+    remaining_eur: 6000,
+    status: 'livrare',
+    start_date: '2024-12-10T00:00:00Z',
+    created_by: 'Maria Popescu',
     created_at: '2024-12-10T09:00:00Z',
   },
 ];
@@ -86,7 +154,7 @@ let projects: Project[] = [
 let tasks: Task[] = [
   {
     id: '1',
-    project_id: '1',
+    contract_id: '1',
     title: 'Măsurători la fața locului',
     assignee: 'Andrei Ionescu',
     due_date: '2025-01-12T12:00:00Z',
@@ -96,7 +164,7 @@ let tasks: Task[] = [
   },
   {
     id: '2',
-    project_id: '1',
+    contract_id: '1',
     title: 'Comandă materiale inox',
     assignee: 'Andrei Ionescu',
     due_date: '2025-01-15T12:00:00Z',
@@ -105,7 +173,7 @@ let tasks: Task[] = [
   },
   {
     id: '3',
-    project_id: '1',
+    contract_id: '1',
     title: 'Producție balustradă',
     assignee: 'Andrei Ionescu',
     due_date: '2025-01-20T12:00:00Z',
@@ -114,7 +182,7 @@ let tasks: Task[] = [
   },
   {
     id: '4',
-    project_id: '2',
+    contract_id: '2',
     title: 'Întocmire ofertă detaliată',
     assignee: 'Andrei Ionescu',
     due_date: '2025-01-11T12:00:00Z',
@@ -123,7 +191,7 @@ let tasks: Task[] = [
   },
   {
     id: '5',
-    project_id: '3',
+    contract_id: '3',
     title: 'Verificare finală înainte de livrare',
     assignee: 'Andrei Ionescu',
     due_date: '2025-01-10T12:00:00Z',
@@ -135,7 +203,7 @@ let tasks: Task[] = [
 let payments: Payment[] = [
   {
     id: '1',
-    project_id: '1',
+    contract_id: '1',
     label: 'Avans 40%',
     amount: 6000,
     due_date: '2025-01-10T12:00:00Z',
@@ -149,7 +217,7 @@ let payments: Payment[] = [
   },
   {
     id: '2',
-    project_id: '1',
+    contract_id: '1',
     label: 'Tranșă la livrare 60%',
     amount: 9000,
     due_date: '2025-01-25T12:00:00Z',
@@ -159,7 +227,7 @@ let payments: Payment[] = [
   },
   {
     id: '3',
-    project_id: '2',
+    contract_id: '2',
     label: 'Plată integrală',
     amount: 8500,
     status: 'neplatit',
@@ -168,7 +236,7 @@ let payments: Payment[] = [
   },
   {
     id: '4',
-    project_id: '3',
+    contract_id: '3',
     label: 'Avans 50%',
     amount: 16000,
     due_date: '2024-12-15T12:00:00Z',
@@ -182,7 +250,7 @@ let payments: Payment[] = [
   },
   {
     id: '5',
-    project_id: '3',
+    contract_id: '3',
     label: 'Rest la livrare 50%',
     amount: 16000,
     due_date: '2025-01-10T12:00:00Z',
@@ -199,7 +267,7 @@ let payments: Payment[] = [
 let files: ProjFile[] = [
   {
     id: '1',
-    project_id: '1',
+    contract_id: '1',
     name: 'Cerere client - Balustradă.pdf',
     url: 'https://example.com/files/cerere-1.pdf',
     tag: 'cerere',
@@ -210,7 +278,7 @@ let files: ProjFile[] = [
   },
   {
     id: '2',
-    project_id: '1',
+    contract_id: '1',
     name: 'Contract semnat.pdf',
     url: 'https://example.com/files/contract-1.pdf',
     tag: 'contract',
@@ -221,7 +289,7 @@ let files: ProjFile[] = [
   },
   {
     id: '3',
-    project_id: '1',
+    contract_id: '1',
     name: 'Desen tehnic balustradă.dwg',
     url: 'https://example.com/files/desen-1.dwg',
     tag: 'desen',
@@ -232,7 +300,7 @@ let files: ProjFile[] = [
   },
   {
     id: '4',
-    project_id: '3',
+    contract_id: '3',
     name: 'Poze bucătărie existentă.zip',
     url: 'https://example.com/files/poze-3.zip',
     tag: 'poza',
@@ -243,7 +311,7 @@ let files: ProjFile[] = [
   },
   {
     id: '5',
-    project_id: '1',
+    contract_id: '1',
     name: 'Imagine balustradă referință.jpg',
     url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
     tag: 'poza',
@@ -257,57 +325,37 @@ let files: ProjFile[] = [
 let chatMessages: ChatMessage[] = [
   {
     id: '1',
-    project_id: '1',
-    author: 'Andrei Ionescu',
+    contract_id: '1',
+    author_id: '1',
+    author_name: 'Andrei Ionescu',
     text: 'Am finalizat măsurătorile. Totul arată bine.',
     created_at: '2025-01-11T16:30:00Z',
   },
   {
     id: '2',
-    project_id: '1',
-    author: 'Maria Popescu',
+    contract_id: '1',
+    author_id: '2',
+    author_name: 'Maria Popescu',
     text: 'Perfect! Când estimezi că putem începe producția?',
     reply_to_id: '1',
     created_at: '2025-01-11T17:00:00Z',
   },
   {
     id: '3',
-    project_id: '1',
-    author: 'Andrei Ionescu',
+    contract_id: '1',
+    author_id: '1',
+    author_name: 'Andrei Ionescu',
     text: 'După ce primim materialele, în 2-3 zile lucrătoare.',
     reply_to_id: '2',
     created_at: '2025-01-11T17:15:00Z',
   },
   {
     id: '4',
-    project_id: '3',
-    author: 'Ion Vasile',
+    contract_id: '3',
+    author_id: '3',
+    author_name: 'Ion Vasile',
     text: 'Clientul a confirmat data livrării pentru 10 ianuarie.',
     created_at: '2025-01-08T11:00:00Z',
-  },
-];
-
-let salesNotes: SalesNote[] = [
-  {
-    id: '1',
-    project_id: '1',
-    author: 'Andrei Ionescu',
-    text: 'Client foarte exigent, atenție la detalii. A cerut garanție extinsă.',
-    created_at: '2025-01-05T11:00:00Z',
-  },
-  {
-    id: '2',
-    project_id: '2',
-    author: 'Andrei Ionescu',
-    text: 'Posibil proiect mare în viitor - poartă + gard complet. Să menținem relația.',
-    created_at: '2025-01-08T15:00:00Z',
-  },
-  {
-    id: '3',
-    project_id: '3',
-    author: 'Maria Popescu',
-    text: 'Client recurent, plătește prompt. Prioritate mare.',
-    created_at: '2024-12-10T09:30:00Z',
   },
 ];
 
@@ -316,7 +364,7 @@ let users: User[] = [
     id: '1',
     name: 'Andrei Ionescu',
     email: 'andrei@artinox.ro',
-    role: 'sales',
+    role: 'admin',
     department: 'sales',
   },
   {
@@ -386,7 +434,7 @@ let projectMembers: ProjectMember[] = [
 let procItems: ProcItem[] = [
   {
     id: '1',
-    project_id: '1',
+    contract_id: '1',
     name: 'Țeavă inox Ø42mm',
     qty: 50,
     unit: 'm',
@@ -400,7 +448,7 @@ let procItems: ProcItem[] = [
   },
   {
     id: '2',
-    project_id: '1',
+    contract_id: '1',
     name: 'Șuruburi inox M8',
     qty: 200,
     unit: 'buc',
@@ -420,7 +468,7 @@ let procItems: ProcItem[] = [
   },
   {
     id: '3',
-    project_id: '1',
+    contract_id: '1',
     name: 'Placă inox 2mm',
     qty: 15,
     unit: 'buc',
@@ -430,7 +478,7 @@ let procItems: ProcItem[] = [
   },
   {
     id: '4',
-    project_id: '3',
+    contract_id: '3',
     name: 'Blat inox 1.5mm',
     qty: 25,
     unit: 'm',
@@ -448,6 +496,34 @@ let procItems: ProcItem[] = [
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
 export const fakeApi = {
+  clients: {
+    getAll: async (): Promise<Client[]> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return [...clients];
+    },
+    
+    getById: async (id: string): Promise<Client | undefined> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return clients.find(c => c.id === id);
+    },
+    
+    create: async (input: CreateClientInput): Promise<Client> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const newClient: Client = {
+        id: generateId(),
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        address: input.address,
+        created_at: new Date().toISOString(),
+      };
+      
+      clients = [newClient, ...clients];
+      return newClient;
+    },
+  },
+  
   users: {
     getAll: async (): Promise<User[]> => {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -516,6 +592,13 @@ export const fakeApi = {
       );
     },
     
+    getByContractId: async (contractId: string): Promise<ProcItem[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return procItems.filter(p => p.contract_id === contractId).sort((a, b) => 
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    },
+    
     getById: async (id: string): Promise<ProcItem | undefined> => {
       await new Promise(resolve => setTimeout(resolve, 50));
       return procItems.find(p => p.id === id);
@@ -527,6 +610,7 @@ export const fakeApi = {
       const newItem: ProcItem = {
         id: generateId(),
         project_id: input.project_id,
+        contract_id: input.contract_id,
         name: input.name,
         qty: input.qty,
         unit: input.unit,
@@ -584,12 +668,20 @@ export const fakeApi = {
       );
     },
     
+    getByContractId: async (contractId: string): Promise<ProjFile[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return files.filter(f => f.contract_id === contractId).sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    },
+    
     create: async (input: CreateFileInput): Promise<ProjFile> => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const newFile: ProjFile = {
         id: generateId(),
         project_id: input.project_id,
+        contract_id: input.contract_id,
         name: input.name,
         url: input.url,
         tag: input.tag,
@@ -624,17 +716,43 @@ export const fakeApi = {
       );
     },
     
+    getByContractId: async (contractId: string): Promise<ChatMessage[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return chatMessages.filter(m => m.contract_id === contractId).sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    },
+    
     create: async (input: CreateChatMessageInput): Promise<ChatMessage> => {
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const attachments: Attachment[] = (input.attachments || []).map(att => ({
+        id: generateId(),
+        message_id: '',
+        name: att.name,
+        url: att.url,
+        mime_type: att.mime_type,
+        size_bytes: att.size_bytes,
+        created_at: new Date().toISOString(),
+      }));
       
       const newMessage: ChatMessage = {
         id: generateId(),
         project_id: input.project_id,
-        author: input.author,
+        contract_id: input.contract_id,
+        author_id: input.author_id,
+        author_name: input.author_name,
         text: input.text,
+        attachments: attachments.length > 0 ? attachments : undefined,
         reply_to_id: input.reply_to_id,
         created_at: new Date().toISOString(),
       };
+      
+      if (attachments.length > 0) {
+        attachments.forEach(att => {
+          att.message_id = newMessage.id;
+        });
+      }
       
       chatMessages = [...chatMessages, newMessage];
       return newMessage;
@@ -645,42 +763,6 @@ export const fakeApi = {
       const initialLength = chatMessages.length;
       chatMessages = chatMessages.filter(m => m.id !== id);
       return chatMessages.length < initialLength;
-    },
-  },
-  
-  salesNotes: {
-    getAll: async (): Promise<SalesNote[]> => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return [...salesNotes];
-    },
-    
-    getByProjectId: async (projectId: string): Promise<SalesNote[]> => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-      return salesNotes.filter(n => n.project_id === projectId).sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    },
-    
-    create: async (input: CreateSalesNoteInput): Promise<SalesNote> => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const newNote: SalesNote = {
-        id: generateId(),
-        project_id: input.project_id,
-        author: input.author,
-        text: input.text,
-        created_at: new Date().toISOString(),
-      };
-      
-      salesNotes = [newNote, ...salesNotes];
-      return newNote;
-    },
-    
-    delete: async (id: string): Promise<boolean> => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const initialLength = salesNotes.length;
-      salesNotes = salesNotes.filter(n => n.id !== id);
-      return salesNotes.length < initialLength;
     },
   },
   
@@ -695,7 +777,7 @@ export const fakeApi = {
       return projects.find(p => p.id === id);
     },
     
-    create: async (input: CreateProjectInput): Promise<Project> => {
+    create: async (input: CreateProjectInput, currentUser: string): Promise<Project> => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const defaultAccess: Record<Department, boolean> = {
@@ -711,13 +793,12 @@ export const fakeApi = {
       
       const newProject: Project = {
         id: generateId(),
-        title: input.title,
-        client_name: input.client_name,
-        client_email: input.client_email,
-        value_total: input.value_total,
+        client_id: input.client_id,
+        name: input.name,
         status: input.status || 'nou',
-        access: defaultAccess,
+        created_by: currentUser,
         created_at: new Date().toISOString(),
+        access: defaultAccess,
       };
       
       projects = [newProject, ...projects];
@@ -750,6 +831,73 @@ export const fakeApi = {
     },
   },
   
+  contracts: {
+    getAll: async (): Promise<Contract[]> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return [...contracts];
+    },
+    
+    getById: async (id: string): Promise<Contract | undefined> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return contracts.find(c => c.id === id);
+    },
+    
+    getByProjectId: async (projectId: string): Promise<Contract[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return contracts.filter(c => c.project_id === projectId).sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    },
+    
+    create: async (input: CreateContractInput, currentUser: string): Promise<Contract> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const newContract: Contract = {
+        id: generateId(),
+        project_id: input.project_id,
+        title: input.title,
+        code: input.code,
+        description: input.description,
+        start_date: input.start_date,
+        value_eur: input.value_eur,
+        paid_eur: 0,
+        remaining_eur: input.value_eur,
+        status: 'nou',
+        created_by: currentUser,
+        created_at: new Date().toISOString(),
+      };
+      
+      contracts = [newContract, ...contracts];
+      return newContract;
+    },
+    
+    update: async (id: string, input: UpdateContractInput): Promise<Contract | undefined> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const index = contracts.findIndex(c => c.id === id);
+      if (index === -1) return undefined;
+      
+      const updated: Contract = {
+        ...contracts[index],
+        ...input,
+      };
+      
+      if (input.value_eur !== undefined) {
+        updated.remaining_eur = input.value_eur - updated.paid_eur;
+      }
+      
+      contracts[index] = updated;
+      return updated;
+    },
+    
+    delete: async (id: string): Promise<boolean> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const initialLength = contracts.length;
+      contracts = contracts.filter(c => c.id !== id);
+      return contracts.length < initialLength;
+    },
+  },
+  
   tasks: {
     getAll: async (): Promise<Task[]> => {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -759,6 +907,11 @@ export const fakeApi = {
     getByProjectId: async (projectId: string): Promise<Task[]> => {
       await new Promise(resolve => setTimeout(resolve, 50));
       return tasks.filter(t => t.project_id === projectId);
+    },
+    
+    getByContractId: async (contractId: string): Promise<Task[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return tasks.filter(t => t.contract_id === contractId);
     },
     
     getById: async (id: string): Promise<Task | undefined> => {
@@ -772,6 +925,7 @@ export const fakeApi = {
       const newTask: Task = {
         id: generateId(),
         project_id: input.project_id,
+        contract_id: input.contract_id,
         title: input.title,
         assignee: input.assignee,
         due_date: input.due_date,
@@ -829,6 +983,11 @@ export const fakeApi = {
       return payments.filter(p => p.project_id === projectId);
     },
     
+    getByContractId: async (contractId: string): Promise<Payment[]> => {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      return payments.filter(p => p.contract_id === contractId);
+    },
+    
     getById: async (id: string): Promise<Payment | undefined> => {
       await new Promise(resolve => setTimeout(resolve, 50));
       return payments.find(p => p.id === id);
@@ -840,6 +999,7 @@ export const fakeApi = {
       const newPayment: Payment = {
         id: generateId(),
         project_id: input.project_id,
+        contract_id: input.contract_id,
         label: input.label,
         amount: input.amount,
         due_date: input.due_date,
