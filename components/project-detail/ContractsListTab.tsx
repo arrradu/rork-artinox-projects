@@ -156,11 +156,13 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
     gap: 4,
+    marginRight: 8,
   },
   contractTitle: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: colors.text,
+    flexWrap: 'wrap',
   },
   contractCode: {
     fontSize: 13,
