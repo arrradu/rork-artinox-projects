@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Search, Plus, FolderOpen, Filter } from 'lucide-react-native';
-import { useApp, useProjectFinancials } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
 import EmptyState from '@/components/EmptyState';
@@ -20,7 +20,13 @@ import type { Project } from '@/types';
 
 function ProjectCard({ project }: { project: Project }) {
   const router = useRouter();
-  const { remaining } = useProjectFinancials(project.id);
+  const { clients, contracts } = useApp();
+  const client = useMemo(() => clients.find(c => c.id === project.client_id), [clients, project.client_id]);
+  const projectContracts = useMemo(() => contracts.filter(c => c.project_id === project.id), [contracts, project.id]);
+  
+  const totalRemaining = useMemo(() => {
+    return projectContracts.reduce((sum, c) => sum + c.remaining_eur, 0);
+  }, [projectContracts]);
 
   return (
     <TouchableOpacity
@@ -30,19 +36,19 @@ function ProjectCard({ project }: { project: Project }) {
     >
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {project.title}
+          {project.name}
         </Text>
         <TagStatus type="project" status={project.status} size="small" />
       </View>
 
       <Text style={styles.cardClient} numberOfLines={1}>
-        {project.client_name}
+        {client?.name || 'Client necunoscut'}
       </Text>
 
-      {project.value_total !== undefined && (
+      {projectContracts.length > 0 && (
         <View style={styles.cardFooter}>
           <Text style={styles.cardLabel}>Rest de încasat:</Text>
-          <Money amount={remaining} size="small" color={colors.primary} />
+          <Money amount={totalRemaining} size="small" color={colors.primary} />
         </View>
       )}
     </TouchableOpacity>
@@ -93,9 +99,7 @@ export default function ProjectsScreen() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.client_name.toLowerCase().includes(query)
+        (p) => p.name.toLowerCase().includes(query)
       );
     }
 

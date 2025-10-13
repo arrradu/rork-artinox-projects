@@ -12,7 +12,6 @@ import type {
   Department,
   CreateFileInput,
   CreateChatMessageInput,
-  CreateSalesNoteInput,
   User,
   CreateProjectMemberInput
 } from '@/types';
@@ -52,11 +51,6 @@ export const [AppContext, useApp] = createContextHook(() => {
     queryFn: fakeApi.chatMessages.getAll,
   });
 
-  const salesNotesQuery = useQuery({
-    queryKey: ['salesNotes'],
-    queryFn: fakeApi.salesNotes.getAll,
-  });
-
   const usersQuery = useQuery({
     queryKey: ['users'],
     queryFn: fakeApi.users.getAll,
@@ -67,8 +61,18 @@ export const [AppContext, useApp] = createContextHook(() => {
     queryFn: fakeApi.projectMembers.getAll,
   });
 
+  const clientsQuery = useQuery({
+    queryKey: ['clients'],
+    queryFn: fakeApi.clients.getAll,
+  });
+
+  const contractsQuery = useQuery({
+    queryKey: ['contracts'],
+    queryFn: fakeApi.contracts.getAll,
+  });
+
   const createProjectMutation = useMutation({
-    mutationFn: (input: CreateProjectInput) => fakeApi.projects.create(input),
+    mutationFn: (input: CreateProjectInput) => fakeApi.projects.create(input, currentUser.name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
@@ -161,20 +165,6 @@ export const [AppContext, useApp] = createContextHook(() => {
     },
   });
 
-  const createSalesNoteMutation = useMutation({
-    mutationFn: (input: CreateSalesNoteInput) => fakeApi.salesNotes.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['salesNotes'] });
-    },
-  });
-
-  const deleteSalesNoteMutation = useMutation({
-    mutationFn: (id: string) => fakeApi.salesNotes.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['salesNotes'] });
-    },
-  });
-
   const createProjectMemberMutation = useMutation({
     mutationFn: (input: CreateProjectMemberInput) => fakeApi.projectMembers.create(input),
     onSuccess: () => {
@@ -235,10 +225,6 @@ export const [AppContext, useApp] = createContextHook(() => {
     chatMessagesLoading: chatMessagesQuery.isLoading,
     chatMessagesError: chatMessagesQuery.error,
     
-    salesNotes: salesNotesQuery.data || [],
-    salesNotesLoading: salesNotesQuery.isLoading,
-    salesNotesError: salesNotesQuery.error,
-    
     users: usersQuery.data || [],
     usersLoading: usersQuery.isLoading,
     usersError: usersQuery.error,
@@ -246,6 +232,14 @@ export const [AppContext, useApp] = createContextHook(() => {
     projectMembers: projectMembersQuery.data || [],
     projectMembersLoading: projectMembersQuery.isLoading,
     projectMembersError: projectMembersQuery.error,
+    
+    clients: clientsQuery.data || [],
+    clientsLoading: clientsQuery.isLoading,
+    clientsError: clientsQuery.error,
+    
+    contracts: contractsQuery.data || [],
+    contractsLoading: contractsQuery.isLoading,
+    contractsError: contractsQuery.error,
     
     createProject: createProjectMutation.mutateAsync,
     updateProject,
@@ -264,9 +258,6 @@ export const [AppContext, useApp] = createContextHook(() => {
     
     createChatMessage: createChatMessageMutation.mutateAsync,
     deleteChatMessage: deleteChatMessageMutation.mutateAsync,
-    
-    createSalesNote: createSalesNoteMutation.mutateAsync,
-    deleteSalesNote: deleteSalesNoteMutation.mutateAsync,
     
     createProjectMember: createProjectMemberMutation.mutateAsync,
     deleteProjectMember: deleteProjectMemberMutation.mutateAsync,
@@ -289,15 +280,18 @@ export const [AppContext, useApp] = createContextHook(() => {
     chatMessagesQuery.data,
     chatMessagesQuery.isLoading,
     chatMessagesQuery.error,
-    salesNotesQuery.data,
-    salesNotesQuery.isLoading,
-    salesNotesQuery.error,
     usersQuery.data,
     usersQuery.isLoading,
     usersQuery.error,
     projectMembersQuery.data,
     projectMembersQuery.isLoading,
     projectMembersQuery.error,
+    clientsQuery.data,
+    clientsQuery.isLoading,
+    clientsQuery.error,
+    contractsQuery.data,
+    contractsQuery.isLoading,
+    contractsQuery.error,
     createProjectMutation.mutateAsync,
     updateProject,
     deleteProjectMutation.mutateAsync,
@@ -311,8 +305,6 @@ export const [AppContext, useApp] = createContextHook(() => {
     deleteFileMutation.mutateAsync,
     createChatMessageMutation.mutateAsync,
     deleteChatMessageMutation.mutateAsync,
-    createSalesNoteMutation.mutateAsync,
-    deleteSalesNoteMutation.mutateAsync,
     createProjectMemberMutation.mutateAsync,
     deleteProjectMemberMutation.mutateAsync,
     toggleDepartmentAccess,
@@ -363,13 +355,6 @@ export function useChatMessagesByProjectId(projectId: string | undefined) {
   return useMemo(() => chatMessages.filter(m => m.project_id === projectId).sort((a, b) => 
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   ), [chatMessages, projectId]);
-}
-
-export function useSalesNotesByProjectId(projectId: string | undefined) {
-  const { salesNotes } = useApp();
-  return useMemo(() => salesNotes.filter(n => n.project_id === projectId).sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ), [salesNotes, projectId]);
 }
 
 export function useUserById(userId: string | undefined) {
