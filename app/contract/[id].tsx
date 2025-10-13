@@ -9,14 +9,14 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useContractById, useApp } from '@/contexts/AppContext';
+import { useContractById } from '@/contexts/AppContext';
 import colors from '@/constants/colors';
-import TasksTab from '@/components/project-detail/TasksTab';
-import PaymentsTab from '@/components/project-detail/PaymentsTab';
-import FilesTab from '@/components/project-detail/FilesTab';
-import ChatTab from '@/components/project-detail/ChatTab';
-import ProcurementTab from '@/components/project-detail/ProcurementTab';
-import ContractOverviewTab from '@/components/contract-detail/ContractOverviewTab';
+import OverviewTab from '@/components/contract-detail/OverviewTab';
+import TasksTab from '@/components/contract-detail/TasksTab';
+import PaymentsTab from '@/components/contract-detail/PaymentsTab';
+import FilesTab from '@/components/contract-detail/FilesTab';
+import ChatTab from '@/components/contract-detail/ChatTab';
+import ProcurementTab from '@/components/contract-detail/ProcurementTab';
 
 type TabType = 'overview' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
 
@@ -24,7 +24,6 @@ export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const contract = useContractById(id);
-  const { currentUser } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   if (!contract) {
@@ -148,12 +147,12 @@ export default function ContractDetailScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {activeTab === 'overview' && <ContractOverviewTab contract={contract} />}
+        {activeTab === 'overview' && <OverviewTab contract={contract} />}
         {activeTab === 'tasks' && <TasksTab contractId={contract.id} />}
-        {activeTab === 'payments' && <PaymentsTab projectId={contract.project_id} contractId={contract.id} />}
-        {activeTab === 'files' && <FilesTab projectId={contract.project_id} contractId={contract.id} />}
-        {activeTab === 'chat' && <ChatTab projectId={contract.project_id} contractId={contract.id} />}
-        {activeTab === 'procurement' && <ProcurementTab projectId={contract.project_id} contractId={contract.id} />}
+        {activeTab === 'payments' && <PaymentsTab contractId={contract.id} />}
+        {activeTab === 'files' && <FilesTab contractId={contract.id} />}
+        {activeTab === 'chat' && <ChatTab contractId={contract.id} />}
+        {activeTab === 'procurement' && <ProcurementTab contractId={contract.id} />}
       </ScrollView>
     </View>
   );

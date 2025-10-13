@@ -64,14 +64,8 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
       return;
     }
 
-    if (!valueEur.trim()) {
-      Alert.alert('Eroare', 'Valoarea contractului este obligatorie');
-      return;
-    }
-
-    const value = parseFloat(valueEur.replace(/,/g, '.'));
-    if (isNaN(value) || value <= 0) {
-      Alert.alert('Eroare', 'Valoarea trebuie să fie un număr pozitiv');
+    if (!valueEur.trim() || isNaN(Number(valueEur))) {
+      Alert.alert('Eroare', 'Valoarea contractului trebuie să fie un număr valid');
       return;
     }
 
@@ -84,7 +78,7 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
         code: code.trim() || undefined,
         description: description.trim() || undefined,
         start_date: startDate ? formatDateToISO(startDate) : undefined,
-        value_eur: value,
+        value_eur: Number(valueEur),
         status,
       });
 
@@ -100,7 +94,7 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
   };
 
   const renderContract = ({ item }: { item: Contract }) => {
-    const nextPaymentDue = item.remaining_eur > 0 ? 'Plăți restante' : 'Plătit integral';
+    const nextDueDate = item.start_date ? formatDateToDisplay(item.start_date) : null;
 
     return (
       <TouchableOpacity
@@ -113,42 +107,30 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
             <Text style={styles.contractTitle} numberOfLines={1}>
               {item.title}
             </Text>
-            <ChevronRight size={20} color={colors.textTertiary} />
+            <ChevronRight size={20} color={colors.textSecondary} />
           </View>
           {item.code && (
-            <Text style={styles.contractCode}>Cod: {item.code}</Text>
+            <Text style={styles.contractCode}>{item.code}</Text>
           )}
         </View>
 
         <View style={styles.contractMeta}>
           <TagStatus type="contract" status={item.status} size="small" />
-          {item.start_date && (
-            <Text style={styles.contractDate}>
-              Început: {formatDateToDisplay(item.start_date)}
-            </Text>
+          {nextDueDate && (
+            <Text style={styles.contractDate}>Început: {nextDueDate}</Text>
           )}
         </View>
 
-        <View style={styles.contractFinancials}>
-          <View style={styles.financialRow}>
-            <Text style={styles.financialLabel}>Valoare:</Text>
+        <View style={styles.contractFooter}>
+          <View style={styles.contractFinancial}>
+            <Text style={styles.contractLabel}>Valoare:</Text>
             <Money amount={item.value_eur} size="small" color={colors.text} />
           </View>
-          <View style={styles.financialRow}>
-            <Text style={styles.financialLabel}>Plătit:</Text>
-            <Money amount={item.paid_eur} size="small" color={colors.success} />
-          </View>
-          <View style={styles.financialRow}>
-            <Text style={styles.financialLabel}>Rest:</Text>
+          <View style={styles.contractFinancial}>
+            <Text style={styles.contractLabel}>Rest:</Text>
             <Money amount={item.remaining_eur} size="small" color={colors.primary} />
           </View>
         </View>
-
-        {item.remaining_eur > 0 && (
-          <View style={styles.contractFooter}>
-            <Text style={styles.nextPayment}>{nextPaymentDue}</Text>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -159,11 +141,7 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
         <EmptyState
           icon={FileText}
           title="Niciun contract"
-          description={
-            isAdmin
-              ? 'Apasă + pentru a adăuga primul contract'
-              : 'Nu există contracte în acest proiect'
-          }
+          description={isAdmin ? 'Apasă + pentru a adăuga primul contract' : 'Nu există contracte în acest proiect'}
         />
       ) : (
         <FlatList
@@ -177,12 +155,11 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
 
       {isAdmin && (
         <TouchableOpacity
-          style={styles.addButton}
+          style={styles.fab}
           onPress={() => setShowModal(true)}
           activeOpacity={0.8}
         >
-          <Plus size={20} color="#FFFFFF" />
-          <Text style={styles.addButtonText}>Contract</Text>
+          <Plus size={24} color="#FFFFFF" />
         </TouchableOpacity>
       )}
 
@@ -199,7 +176,7 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
           <View style={styles.modalContent}>
             <ScrollView
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalScroll}
             >
               <Text style={styles.modalTitle}>Contract nou</Text>
 
@@ -237,7 +214,7 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
                   onChangeText={setValueEur}
                   placeholder="ex: 15000"
                   placeholderTextColor={colors.textTertiary}
-                  keyboardType="decimal-pad"
+                  keyboardType="numeric"
                 />
               </View>
 
@@ -290,33 +267,30 @@ export default function ContractsTab({ projectId }: ContractsTabProps) {
                   textAlignVertical="top"
                 />
               </View>
-
-              <View style={styles.modalFooter}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.cancelButtonText}>Anulează</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    isSubmitting && styles.submitButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.submitButtonText}>
-                    {isSubmitting ? 'Se creează...' : 'Creează'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.cancelButtonText}>Anulează</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isSubmitting ? 'Se creează...' : 'Creează'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -329,12 +303,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    gap: 12,
+    paddingBottom: 80,
   },
   contractCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 12,
@@ -357,6 +332,7 @@ const styles = StyleSheet.create({
   contractCode: {
     fontSize: 13,
     color: colors.textSecondary,
+    fontFamily: 'monospace' as const,
   },
   contractMeta: {
     flexDirection: 'row',
@@ -367,52 +343,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
   },
-  contractFinancials: {
-    gap: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  financialRow: {
+  contractFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  financialLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  contractFooter: {
-    paddingTop: 8,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
-  nextPayment: {
-    fontSize: 13,
-    color: colors.warning,
-    fontWeight: '500' as const,
-  },
-  addButton: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
+  contractFinancial: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
-  addButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#FFFFFF',
+  contractLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -423,23 +384,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
     maxHeight: '90%',
+  },
+  modalScroll: {
+    padding: 20,
+    gap: 20,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600' as const,
     color: colors.text,
-    marginBottom: 20,
   },
   field: {
-    marginBottom: 16,
+    gap: 8,
   },
   label: {
     fontSize: 15,
     fontWeight: '500' as const,
     color: colors.text,
-    marginBottom: 8,
   },
   required: {
     color: colors.error,
@@ -485,8 +447,10 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     flexDirection: 'row',
+    padding: 16,
     gap: 12,
-    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   cancelButton: {
     flex: 1,
