@@ -17,8 +17,7 @@ import { fakeApi } from '@/api/fakeApi';
 import type { ProcItem, ProcStatus, ProcUnit, TransportType } from '@/types';
 
 interface ProcurementTabProps {
-  projectId?: string;
-  contractId?: string;
+  projectId: string;
 }
 
 const STATUS_LABELS: Record<ProcStatus, string> = {
@@ -39,8 +38,7 @@ const STATUS_COLORS: Record<ProcStatus, string> = {
 
 const UNIT_OPTIONS: ProcUnit[] = ['kg', 'buc', 'm', 'L', 'ml'];
 
-export default function ProcurementTab({ projectId, contractId }: ProcurementTabProps) {
-  const effectiveId = contractId || projectId || '';
+export default function ProcurementTab({ projectId }: ProcurementTabProps) {
   const [items, setItems] = useState<ProcItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ProcItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -91,7 +89,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
 
   useEffect(() => {
     loadItems();
-  }, [effectiveId]);
+  }, [projectId]);
 
   useEffect(() => {
     filterItems();
@@ -100,7 +98,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
   const loadItems = async () => {
     try {
       setLoading(true);
-      const data = await fakeApi.procItems.getByProjectId(effectiveId);
+      const data = await fakeApi.procItems.getByProjectId(projectId);
       setItems(data);
     } catch (error) {
       console.error('Error loading procurement items:', error);
@@ -158,7 +156,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
 
     try {
       await fakeApi.procItems.create({
-        project_id: effectiveId,
+        project_id: projectId,
         name: formData.name,
         qty,
         unit: formData.unit,

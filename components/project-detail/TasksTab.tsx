@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CheckSquare, AlertCircle } from 'lucide-react-native';
-import { useTasksByProjectId, useTasksByContractId, useApp } from '@/contexts/AppContext';
+import { useTasksByProjectId, useApp } from '@/contexts/AppContext';
 import TaskStatusToggle from '@/components/TaskStatusToggle';
 import DeadlineBadge from '@/components/DeadlineBadge';
 import EmptyState from '@/components/EmptyState';
@@ -10,8 +10,7 @@ import colors from '@/constants/colors';
 import type { Task, TaskStatus } from '@/types';
 
 interface TasksTabProps {
-  projectId?: string;
-  contractId?: string;
+  projectId: string;
 }
 
 function TaskItem({ task }: { task: Task }) {
@@ -61,10 +60,8 @@ function TaskItem({ task }: { task: Task }) {
   );
 }
 
-export default function TasksTab({ projectId, contractId }: TasksTabProps) {
-  const projectTasks = useTasksByProjectId(projectId);
-  const contractTasks = useTasksByContractId(contractId);
-  const tasks = contractId ? contractTasks : projectTasks;
+export default function TasksTab({ projectId }: TasksTabProps) {
+  const tasks = useTasksByProjectId(projectId);
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.status === 'done' && b.status !== 'done') return 1;

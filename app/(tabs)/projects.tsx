@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Search, Plus, FolderOpen, Filter } from 'lucide-react-native';
-import { useApp, useProjectFinancials, useClientById, useContractsByProjectId } from '@/contexts/AppContext';
+import { useApp, useProjectFinancials, useClientById } from '@/contexts/AppContext';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
 import EmptyState from '@/components/EmptyState';
@@ -22,7 +22,6 @@ function ProjectCard({ project }: { project: Project }) {
   const router = useRouter();
   const { remaining } = useProjectFinancials(project.id);
   const client = useClientById(project.client_id);
-  const contracts = useContractsByProjectId(project.id);
 
   return (
     <TouchableOpacity
@@ -39,10 +38,6 @@ function ProjectCard({ project }: { project: Project }) {
 
       <Text style={styles.cardClient} numberOfLines={1}>
         {client?.nume || 'Client necunoscut'}
-      </Text>
-
-      <Text style={styles.cardSubtext}>
-        Contracte: {contracts.length} • Valoare: {project.total_value_eur.toLocaleString('ro-RO')} EUR
       </Text>
 
       {project.total_value_eur > 0 && (
@@ -357,11 +352,6 @@ const styles = StyleSheet.create({
   cardClient: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  cardSubtext: {
-    fontSize: 12,
-    color: colors.textTertiary,
     marginBottom: 12,
   },
   cardFooter: {
