@@ -36,13 +36,10 @@ import colors from '@/constants/colors';
 import type { FileTag, ProjFile } from '@/types';
 import { filesApi } from '@/api/filesApi';
 
-type EntityScope = { projectId?: string; contractId?: string };
-
-interface FilesTabProps extends EntityScope {
-  currentUserId?: string;
+interface FilesTabProps {
+  projectId: string;
+  contractId?: string;
 }
-
-export type { FilesTabProps };
 
 interface SelectedFileInfo {
   uri: string;
@@ -133,8 +130,7 @@ function formatDate(isoString: string): string {
 }
 
 export default function FilesTab({ projectId, contractId }: FilesTabProps) {
-  const scopeId = contractId ?? projectId ?? '';
-  const files = useFilesByProjectId(scopeId);
+  const files = useFilesByProjectId(projectId);
   const { createFile, deleteFile, currentUser } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
@@ -248,7 +244,7 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(20);
       const { uploadUrl, fileUrl } = await filesApi.getPresignedUpload(
-        scopeId,
+        projectId,
         name.trim(),
         selectedFileInfo.mimeType
       );
@@ -271,8 +267,8 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(70);
       await filesApi.notifyUploaded({
-        project_id: projectId ?? undefined,
-        contract_id: contractId ?? undefined,
+        project_id: projectId,
+        contract_id: contractId,
         name: name.trim(),
         url: fileUrl,
         mime_type: selectedFileInfo.mimeType,
@@ -285,8 +281,8 @@ export default function FilesTab({ projectId, contractId }: FilesTabProps) {
 
       setUploadProgress(90);
       await createFile({
-        project_id: projectId ?? undefined,
-        contract_id: contractId ?? undefined,
+        project_id: projectId,
+        contract_id: contractId,
         name: name.trim(),
         url: fileUrl,
         tag,

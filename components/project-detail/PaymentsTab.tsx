@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { Wallet, Plus, Edit2, CheckCircle, AlertTriangle, Clock } from 'lucide-react-native';
-import { usePaymentsByProjectId, usePaymentsByContractId, useProjectFinancials, useContractFinancials, useApp } from '@/contexts/AppContext';
+import { usePaymentsByProjectId, useProjectFinancials, useApp } from '@/contexts/AppContext';
 
 import Money from '@/components/Money';
 import EmptyState from '@/components/EmptyState';
@@ -9,10 +9,8 @@ import colors from '@/constants/colors';
 import { formatDateShort, formatDateToDisplay, formatDateToISO, getCurrentDateDisplay } from '@/constants/formatters';
 import type { Payment, PaymentStatus } from '@/types';
 
-type EntityScope = { projectId?: string; contractId?: string };
-
-interface PaymentsTabProps extends EntityScope {
-  currentUserId?: string;
+interface PaymentsTabProps {
+  projectId: string;
 }
 
 type PaymentFilter = 'toate' | 'neplatite' | 'depasite' | 'partiale' | 'platite';
@@ -372,15 +370,9 @@ function MarkPaidModal({
   );
 }
 
-export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps) {
-  const scopeId = contractId ?? projectId ?? '';
-  const projectPayments = usePaymentsByProjectId(projectId ?? undefined);
-  const contractPayments = usePaymentsByContractId(contractId ?? undefined);
-  const payments = contractId ? contractPayments : projectPayments;
-  
-  const projectFinancials = useProjectFinancials(projectId ?? undefined);
-  const contractFinancials = useContractFinancials(contractId ?? undefined);
-  const { total, paid, remaining } = contractId ? contractFinancials : projectFinancials;
+export default function PaymentsTab({ projectId }: PaymentsTabProps) {
+  const payments = usePaymentsByProjectId(projectId);
+  const { total, paid, remaining } = useProjectFinancials(projectId);
   const { currentUser, createPayment, updatePayment } = useApp();
   const [filter, setFilter] = useState<PaymentFilter>('toate');
   const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
@@ -461,7 +453,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
           visible={addModalVisible}
           onClose={() => setAddModalVisible(false)}
           onSubmit={handleAddPayment}
-          projectId={scopeId ?? ''}
+          projectId={projectId}
         />
       </View>
     );
@@ -545,7 +537,7 @@ export default function PaymentsTab({ projectId, contractId }: PaymentsTabProps)
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onSubmit={handleAddPayment}
-        projectId={scopeId ?? ''}
+        projectId={projectId}
       />
 
       <MarkPaidModal

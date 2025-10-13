@@ -4,7 +4,7 @@ export interface PresignedUploadResponse {
 }
 
 export interface NotifyUploadedPayload {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   name: string;
   url: string;

@@ -128,7 +128,7 @@ export interface CreateTaskInput {
 }
 
 export interface CreatePaymentInput {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   label: string;
   amount: number;
@@ -213,7 +213,7 @@ export interface SalesNote {
 }
 
 export interface CreateFileInput {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   name: string;
   url: string;
@@ -224,7 +224,7 @@ export interface CreateFileInput {
 }
 
 export interface CreateChatMessageInput {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   author: string;
   text: string;
@@ -232,7 +232,7 @@ export interface CreateChatMessageInput {
 }
 
 export interface CreateSalesNoteInput {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   author: string;
   text: string;
@@ -271,7 +271,7 @@ export interface ProcItem {
 }
 
 export interface CreateProcItemInput {
-  project_id?: string;
+  project_id: string;
   contract_id?: string;
   name: string;
   qty: number;

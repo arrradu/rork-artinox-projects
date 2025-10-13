@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import colors from '@/constants/colors';
-import type { ProjectStatus, TaskStatus, PaymentStatus, ContractStatus } from '@/types';
+import type { ProjectStatus, TaskStatus, PaymentStatus } from '@/types';
 
 interface TagStatusProps {
-  type: 'project' | 'contract' | 'task' | 'payment';
-  status: ProjectStatus | ContractStatus | TaskStatus | PaymentStatus;
+  type: 'project' | 'task' | 'payment';
+  status: ProjectStatus | TaskStatus | PaymentStatus;
   size?: 'small' | 'medium';
 }
 
@@ -15,13 +15,6 @@ const projectLabels: Record<ProjectStatus, string> = {
   livrare: 'Livrare',
   finalizat: 'Finalizat',
   anulat: 'Anulat',
-};
-
-const contractLabels: Record<ContractStatus, string> = {
-  nou: 'Nou',
-  in_lucru: 'În lucru',
-  livrare: 'Livrare',
-  finalizat: 'Finalizat',
 };
 
 const taskLabels: Record<TaskStatus, string> = {
@@ -44,13 +37,6 @@ const projectColors: Record<ProjectStatus, { bg: string; text: string }> = {
   anulat: { bg: colors.statusAnulatLight, text: colors.statusAnulat },
 };
 
-const contractColors: Record<ContractStatus, { bg: string; text: string }> = {
-  nou: { bg: colors.statusNouLight, text: colors.statusNou },
-  in_lucru: { bg: colors.statusInLucruLight, text: colors.statusInLucru },
-  livrare: { bg: colors.statusLivrareLight, text: colors.statusLivrare },
-  finalizat: { bg: colors.statusFinalizatLight, text: colors.statusFinalizat },
-};
-
 const taskColors: Record<TaskStatus, { bg: string; text: string }> = {
   todo: { bg: colors.taskTodoLight, text: colors.taskTodo },
   doing: { bg: colors.taskDoingLight, text: colors.taskDoing },
@@ -70,9 +56,6 @@ export default function TagStatus({ type, status, size = 'medium' }: TagStatusPr
   if (type === 'project') {
     label = projectLabels[status as ProjectStatus];
     colorScheme = projectColors[status as ProjectStatus];
-  } else if (type === 'contract') {
-    label = contractLabels[status as ContractStatus];
-    colorScheme = contractColors[status as ContractStatus];
   } else if (type === 'task') {
     label = taskLabels[status as TaskStatus];
     colorScheme = taskColors[status as TaskStatus];

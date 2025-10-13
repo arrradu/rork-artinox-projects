@@ -16,10 +16,8 @@ import { formatDateToDisplay } from '@/constants/formatters';
 import { fakeApi } from '@/api/fakeApi';
 import type { ProcItem, ProcStatus, ProcUnit, TransportType } from '@/types';
 
-type EntityScope = { projectId?: string; contractId?: string };
-
-interface ProcurementTabProps extends EntityScope {
-  currentUserId?: string;
+interface ProcurementTabProps {
+  projectId: string;
 }
 
 const STATUS_LABELS: Record<ProcStatus, string> = {
@@ -40,7 +38,7 @@ const STATUS_COLORS: Record<ProcStatus, string> = {
 
 const UNIT_OPTIONS: ProcUnit[] = ['kg', 'buc', 'm', 'L', 'ml'];
 
-export default function ProcurementTab({ projectId, contractId }: ProcurementTabProps) {
+export default function ProcurementTab({ projectId }: ProcurementTabProps) {
   const [items, setItems] = useState<ProcItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ProcItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -100,9 +98,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
   const loadItems = async () => {
     try {
       setLoading(true);
-      const data = contractId 
-      ? await fakeApi.procItems.getByContractId(contractId)
-      : await fakeApi.procItems.getByProjectId(projectId!);
+      const data = await fakeApi.procItems.getByProjectId(projectId);
       setItems(data);
     } catch (error) {
       console.error('Error loading procurement items:', error);
@@ -160,7 +156,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
 
     try {
       await fakeApi.procItems.create({
-        project_id: projectId ?? '',
+        project_id: projectId,
         name: formData.name,
         qty,
         unit: formData.unit,
@@ -473,7 +469,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Nume material *</Text>
               <TextInput
                 style={styles.input}
-                value={formData.name ?? ''}
+                value={formData.name}
                 onChangeText={text => setFormData({ ...formData, name: text })}
                 placeholder="ex: Țeavă inox Ø42mm"
                 placeholderTextColor={colors.textSecondary}
@@ -484,7 +480,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
                   <Text style={styles.label}>Cantitate *</Text>
                   <TextInput
                     style={styles.input}
-                    value={formData.qty ?? ''}
+                    value={formData.qty}
                     onChangeText={text => setFormData({ ...formData, qty: text })}
                     placeholder="0"
                     keyboardType="numeric"
@@ -521,7 +517,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Furnizor</Text>
               <TextInput
                 style={styles.input}
-                value={formData.supplier ?? ''}
+                value={formData.supplier}
                 onChangeText={text => setFormData({ ...formData, supplier: text })}
                 placeholder="ex: Inox Distribution SRL"
                 placeholderTextColor={colors.textSecondary}
@@ -530,7 +526,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Preț estimat (EUR)</Text>
               <TextInput
                 style={styles.input}
-                value={formData.price_estimate ?? ''}
+                value={formData.price_estimate}
                 onChangeText={text => setFormData({ ...formData, price_estimate: text })}
                 placeholder="0.00"
                 keyboardType="numeric"
@@ -540,7 +536,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Responsabil</Text>
               <TextInput
                 style={styles.input}
-                value={formData.assignee ?? ''}
+                value={formData.assignee}
                 onChangeText={text => setFormData({ ...formData, assignee: text })}
                 placeholder="ex: Ion Vasile"
                 placeholderTextColor={colors.textSecondary}
@@ -549,7 +545,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Număr PO</Text>
               <TextInput
                 style={styles.input}
-                value={formData.po_number ?? ''}
+                value={formData.po_number}
                 onChangeText={text => setFormData({ ...formData, po_number: text })}
                 placeholder="ex: PO-2025-001"
                 placeholderTextColor={colors.textSecondary}
@@ -658,7 +654,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>Număr vehicul / Camion</Text>
               <TextInput
                 style={styles.input}
-                value={transportData.vehicle_number ?? ''}
+                value={transportData.vehicle_number}
                 onChangeText={text => setTransportData({ ...transportData, vehicle_number: text })}
                 placeholder="ex: B-123-ABC"
                 placeholderTextColor={colors.textSecondary}
@@ -667,7 +663,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>CMR / AWB</Text>
               <TextInput
                 style={styles.input}
-                value={transportData.cmr_awb ?? ''}
+                value={transportData.cmr_awb}
                 onChangeText={text => setTransportData({ ...transportData, cmr_awb: text })}
                 placeholder="ex: CMR-2025-0042"
                 placeholderTextColor={colors.textSecondary}
@@ -676,7 +672,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
               <Text style={styles.label}>ETA (DD-MM-YYYY)</Text>
               <TextInput
                 style={styles.input}
-                value={transportData.eta ?? ''}
+                value={transportData.eta}
                 onChangeText={text => setTransportData({ ...transportData, eta: text })}
                 placeholder="ex: 15-01-2025"
                 placeholderTextColor={colors.textSecondary}
@@ -732,7 +728,7 @@ export default function ProcurementTab({ projectId, contractId }: ProcurementTab
                   <Text style={styles.label}>Cantitate primită</Text>
                   <TextInput
                     style={styles.input}
-                    value={partialQty ?? ''}
+                    value={partialQty}
                     onChangeText={setPartialQty}
                     placeholder={`0 - ${selectedItem.qty}`}
                     keyboardType="numeric"

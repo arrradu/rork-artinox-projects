@@ -17,9 +17,8 @@ import PaymentsTab from '@/components/project-detail/PaymentsTab';
 import FilesTab from '@/components/project-detail/FilesTab';
 import ChatTab from '@/components/project-detail/ChatTab';
 import ProcurementTab from '@/components/project-detail/ProcurementTab';
-import ContractsTab from '@/components/project-detail/ContractsTab';
 
-type TabType = 'overview' | 'contracts' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
+type TabType = 'overview' | 'tasks' | 'payments' | 'files' | 'chat' | 'procurement';
 
 export default function ProjectDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +39,7 @@ export default function ProjectDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: project.name,
+          title: project.title,
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -52,12 +51,7 @@ export default function ProjectDetailScreen() {
         }}
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabBar}
-        contentContainerStyle={styles.tabBarContent}
-      >
+      <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
           onPress={() => setActiveTab('overview')}
@@ -69,20 +63,6 @@ export default function ProjectDetailScreen() {
             ]}
           >
             Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'contracts' && styles.tabActive]}
-          onPress={() => setActiveTab('contracts')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'contracts' && styles.tabTextActive,
-            ]}
-          >
-            Contracte
           </Text>
         </TouchableOpacity>
 
@@ -155,7 +135,7 @@ export default function ProjectDetailScreen() {
             Achiziții
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       <ScrollView
         style={styles.content}
@@ -163,7 +143,6 @@ export default function ProjectDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {activeTab === 'overview' && <OverviewTab project={project} />}
-        {activeTab === 'contracts' && <ContractsTab projectId={project.id} />}
         {activeTab === 'tasks' && <TasksTab projectId={project.id} />}
         {activeTab === 'payments' && <PaymentsTab projectId={project.id} />}
         {activeTab === 'files' && <FilesTab projectId={project.id} />}
@@ -190,16 +169,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   tabBar: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  tabBarContent: {
-    paddingHorizontal: 4,
-  },
   tab: {
+    flex: 1,
     paddingVertical: 16,
-    paddingHorizontal: 20,
     alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
