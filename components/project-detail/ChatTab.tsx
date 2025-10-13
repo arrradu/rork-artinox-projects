@@ -9,8 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Send, MessageCircle, StickyNote } from 'lucide-react-native';
-import { useChatMessagesByProjectId, useSalesNotesByProjectId, useApp } from '@/contexts/AppContext';
+import { Send, MessageCircle } from 'lucide-react-native';
+import { useChatMessagesByProjectId, useApp } from '@/contexts/AppContext';
 import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 
@@ -36,15 +36,11 @@ function formatMessageTime(dateString: string): string {
 
 export default function ChatTab({ projectId }: ChatTabProps) {
   const messages = useChatMessagesByProjectId(projectId);
-  const salesNotes = useSalesNotesByProjectId(projectId);
-  const { createChatMessage, createSalesNote, currentUser } = useApp();
+  const { createChatMessage, currentUser } = useApp();
   const [messageText, setMessageText] = useState('');
-  const [noteText, setNoteText] = useState('');
   const [replyToId, setReplyToId] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const userIsSales = true;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -61,7 +57,8 @@ export default function ChatTab({ projectId }: ChatTabProps) {
     try {
       await createChatMessage({
         project_id: projectId,
-        author: currentUser.name,
+        author_id: currentUser.id,
+        author_name: currentUser.name,
         text: messageText.trim(),
         reply_to_id: replyToId,
       });
@@ -75,28 +72,11 @@ export default function ChatTab({ projectId }: ChatTabProps) {
     }
   };
 
-  const handleAddNote = async () => {
-    if (!noteText.trim()) return;
 
-    setLoading(true);
-    try {
-      await createSalesNote({
-        project_id: projectId,
-        author: currentUser.name,
-        text: noteText.trim(),
-      });
-      
-      setNoteText('');
-    } catch (error) {
-      console.error('Error adding note:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const replyToMessage = messages.find(m => m.id === replyToId);
 
-  if (messages.length === 0 && (!userIsSales || salesNotes.length === 0)) {
+  if (messages.length === 0) {
     return (
       <KeyboardAvoidingView
         style={styles.container}
@@ -143,47 +123,9 @@ export default function ChatTab({ projectId }: ChatTabProps) {
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
       >
-        {userIsSales && salesNotes.length > 0 && (
-          <View style={styles.salesNotesSection}>
-            <View style={styles.salesNotesHeader}>
-              <StickyNote size={18} color={colors.warning} />
-              <Text style={styles.salesNotesTitle}>Note Vânzări (privat)</Text>
-            </View>
-            {salesNotes.map((note) => (
-              <View key={note.id} style={styles.salesNoteCard}>
-                <View style={styles.noteHeader}>
-                  <Text style={styles.noteAuthor}>{note.author}</Text>
-                  <Text style={styles.noteTime}>{formatMessageTime(note.created_at)}</Text>
-                </View>
-                <Text style={styles.noteText}>{note.text}</Text>
-              </View>
-            ))}
-            
-            <View style={styles.addNoteContainer}>
-              <TextInput
-                style={styles.noteInput}
-                value={noteText}
-                onChangeText={setNoteText}
-                placeholder="Adaugă notă privată..."
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                maxLength={500}
-              />
-              <TouchableOpacity
-                style={[styles.addNoteButton, !noteText.trim() && styles.addNoteButtonDisabled]}
-                onPress={handleAddNote}
-                disabled={loading || !noteText.trim()}
-              >
-                <Text style={styles.addNoteButtonText}>Adaugă</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
         <View style={styles.chatSection}>
-          <Text style={styles.chatTitle}>Conversație proiect</Text>
           {messages.map((message) => {
-            const isCurrentUser = message.author === currentUser.name;
+            const isCurrentUser = message.author_name === currentUser.name;
             const replyTo = message.reply_to_id 
               ? messages.find(m => m.id === message.reply_to_id)
               : undefined;
@@ -198,14 +140,14 @@ export default function ChatTab({ projectId }: ChatTabProps) {
               >
                 {replyTo && (
                   <View style={styles.replyPreview}>
-                    <Text style={styles.replyAuthor}>{replyTo.author}</Text>
+                    <Text style={styles.replyAuthor}>{replyTo.author_name}</Text>
                     <Text style={styles.replyText} numberOfLines={1}>
                       {replyTo.text}
                     </Text>
                   </View>
                 )}
                 <View style={styles.messageHeader}>
-                  <Text style={styles.messageAuthor}>{message.author}</Text>
+                  <Text style={styles.messageAuthor}>{message.author_name}</Text>
                   <Text style={styles.messageTime}>{formatMessageTime(message.created_at)}</Text>
                 </View>
                 <Text style={styles.messageText}>{message.text}</Text>
@@ -227,7 +169,7 @@ export default function ChatTab({ projectId }: ChatTabProps) {
         {replyToMessage && (
           <View style={styles.replyingTo}>
             <View style={styles.replyingToContent}>
-              <Text style={styles.replyingToLabel}>Răspunzi la {replyToMessage.author}</Text>
+              <Text style={styles.replyingToLabel}>Răspunzi la {replyToMessage.author_name}</Text>
               <Text style={styles.replyingToText} numberOfLines={1}>
                 {replyToMessage.text}
               </Text>
@@ -269,92 +211,10 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     paddingBottom: 16,
-  },
-  salesNotesSection: {
-    backgroundColor: '#FFF9E6',
-    borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#FFE4A3',
-  },
-  salesNotesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  salesNotesTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: colors.text,
-  },
-  salesNoteCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#FFE4A3',
-  },
-  noteHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  noteAuthor: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.text,
-  },
-  noteTime: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  noteText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  addNoteContainer: {
-    marginTop: 8,
-  },
-  noteInput: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#FFE4A3',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: colors.text,
-    minHeight: 60,
-    textAlignVertical: 'top',
-    marginBottom: 8,
-  },
-  addNoteButton: {
-    backgroundColor: colors.warning,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignSelf: 'flex-end',
-  },
-  addNoteButtonDisabled: {
-    opacity: 0.5,
-  },
-  addNoteButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: '#fff',
   },
   chatSection: {
     gap: 12,
-  },
-  chatTitle: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: colors.text,
-    marginBottom: 4,
   },
   messageCard: {
     backgroundColor: colors.surface,
