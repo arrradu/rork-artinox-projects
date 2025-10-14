@@ -22,7 +22,7 @@ export const [AppContext, useApp] = createContextHook(() => {
     id: '1',
     name: 'Andrei Ionescu',
     email: 'andrei@artinox.ro',
-    role: 'sales',
+    role: 'admin',
     department: 'sales',
   });
 

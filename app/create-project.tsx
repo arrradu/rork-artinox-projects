@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,38 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
 import colors from '@/constants/colors';
-import type { ProjectStatus } from '@/types';
+import type { ProjectStatus, Client } from '@/types';
+import { X, Plus, ChevronDown } from 'lucide-react-native';
 
 export default function CreateProjectScreen() {
   const router = useRouter();
-  const { createProject } = useApp();
+  const { createProject, clients } = useApp();
 
-  const [title, setTitle] = useState('');
-  const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [valueTotal, setValueTotal] = useState('');
+  const [name, setName] = useState('');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showClientPicker, setShowClientPicker] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('nou');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearch.trim()) return clients;
+    const query = clientSearch.toLowerCase();
+    return clients.filter(c => 
+      c.name.toLowerCase().includes(query) ||
+      c.email?.toLowerCase().includes(query)
+    );
+  }, [clients, clientSearch]);
 
   const statusOptions: { value: ProjectStatus; label: string }[] = [
     { value: 'nou', label: 'Nou' },
@@ -35,18 +51,13 @@ export default function CreateProjectScreen() {
   ];
 
   const validateForm = () => {
-    if (!title.trim()) {
-      Alert.alert('Eroare', 'Titlul este obligatoriu');
+    if (!name.trim()) {
+      Alert.alert('Eroare', 'Numele proiectului este obligatoriu');
       return false;
     }
 
-    if (!clientName.trim()) {
-      Alert.alert('Eroare', 'Numele clientului este obligatoriu');
-      return false;
-    }
-
-    if (valueTotal && parseFloat(valueTotal) < 0) {
-      Alert.alert('Eroare', 'Valoarea trebuie să fie pozitivă');
+    if (!selectedClient) {
+      Alert.alert('Eroare', 'Selectează un client');
       return false;
     }
 
@@ -59,24 +70,16 @@ export default function CreateProjectScreen() {
     setIsSubmitting(true);
 
     try {
-      await createProject({
-        title: title.trim(),
-        client_name: clientName.trim(),
-        client_email: clientEmail.trim() || undefined,
-        value_total: valueTotal ? parseFloat(valueTotal) : undefined,
+      const project = await createProject({
+        client_id: selectedClient!.id,
+        name: name.trim(),
         status,
       });
 
-      Alert.alert('Success', 'Proiect creat cu succes', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      router.replace(`/project/${project.id}` as any);
     } catch (error) {
       console.error('Error creating project:', error);
       Alert.alert('Eroare', 'Nu s-a putut crea proiectul');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -86,6 +89,13 @@ export default function CreateProjectScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <Stack.Screen
+        options={{
+          title: 'Proiect nou',
+          headerBackTitle: 'Înapoi',
+        }}
+      />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -94,52 +104,29 @@ export default function CreateProjectScreen() {
         <View style={styles.form}>
           <View style={styles.field}>
             <Text style={styles.label}>
-              Titlu proiect <Text style={styles.required}>*</Text>
+              Client <Text style={styles.required}>*</Text>
             </Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="ex: Balustradă Inox Scară"
-              placeholderTextColor={colors.textTertiary}
-            />
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowClientPicker(true)}
+            >
+              <Text style={[styles.pickerButtonText, !selectedClient && styles.pickerPlaceholder]}>
+                {selectedClient ? selectedClient.name : 'Selectează client'}
+              </Text>
+              <ChevronDown size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>
-              Nume client <Text style={styles.required}>*</Text>
+              Nume proiect <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={styles.input}
-              value={clientName}
-              onChangeText={setClientName}
-              placeholder="ex: SC Construct Design SRL"
+              value={name}
+              onChangeText={setName}
+              placeholder="ex: Vinăria Alvisa"
               placeholderTextColor={colors.textTertiary}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Email client</Text>
-            <TextInput
-              style={styles.input}
-              value={clientEmail}
-              onChangeText={setClientEmail}
-              placeholder="ex: contact@client.ro"
-              placeholderTextColor={colors.textTertiary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Valoare totală (EUR)</Text>
-            <TextInput
-              style={styles.input}
-              value={valueTotal}
-              onChangeText={setValueTotal}
-              placeholder="ex: 15000"
-              placeholderTextColor={colors.textTertiary}
-              keyboardType="decimal-pad"
             />
           </View>
 
@@ -169,6 +156,144 @@ export default function CreateProjectScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showClientPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowClientPicker(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selectează client</Text>
+              <TouchableOpacity
+                onPress={() => setShowClientPicker(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.searchInput}
+              value={clientSearch}
+              onChangeText={setClientSearch}
+              placeholder="Caută client..."
+              placeholderTextColor={colors.textTertiary}
+            />
+
+            <TouchableOpacity
+              style={styles.newClientButton}
+              onPress={() => {
+                setShowClientPicker(false);
+                setShowNewClientModal(true);
+              }}
+            >
+              <Plus size={20} color={colors.primary} />
+              <Text style={styles.newClientButtonText}>Client nou</Text>
+            </TouchableOpacity>
+
+            <FlatList
+              data={filteredClients}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.clientItem}
+                  onPress={() => {
+                    setSelectedClient(item);
+                    setShowClientPicker(false);
+                    setClientSearch('');
+                  }}
+                >
+                  <Text style={styles.clientItemName}>{item.name}</Text>
+                  {item.email && (
+                    <Text style={styles.clientItemEmail}>{item.email}</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyList}>
+                  <Text style={styles.emptyListText}>Niciun client găsit</Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showNewClientModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowNewClientModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Client nou</Text>
+              <TouchableOpacity
+                onPress={() => setShowNewClientModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.newClientForm}>
+              <View style={styles.field}>
+                <Text style={styles.label}>
+                  Nume <Text style={styles.required}>*</Text>
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={newClientName}
+                  onChangeText={setNewClientName}
+                  placeholder="ex: SC Construct Design SRL"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newClientEmail}
+                  onChangeText={setNewClientEmail}
+                  placeholder="contact@client.ro"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Telefon</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newClientPhone}
+                  onChangeText={setNewClientPhone}
+                  placeholder="+40 721 123 456"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.submitButton, !newClientName.trim() && styles.submitButtonDisabled]}
+                onPress={() => {
+                  if (!newClientName.trim()) return;
+                  Alert.alert('Info', 'Funcționalitatea de creare client va fi implementată');
+                  setShowNewClientModal(false);
+                }}
+                disabled={!newClientName.trim()}
+              >
+                <Text style={styles.submitButtonText}>Creează client</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.footer}>
         <TouchableOpacity
@@ -227,6 +352,106 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: colors.text,
+  },
+  pickerButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 15,
+    color: colors.text,
+  },
+  pickerPlaceholder: {
+    color: colors.textTertiary,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.text,
+  },
+  searchInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+    margin: 16,
+  },
+  newClientButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  newClientButtonText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: colors.primary,
+  },
+  clientItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  clientItemName: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  clientItemEmail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  emptyList: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyListText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
+  newClientForm: {
+    padding: 20,
+    gap: 16,
   },
   statusGrid: {
     flexDirection: 'row',
