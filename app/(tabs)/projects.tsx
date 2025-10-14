@@ -124,12 +124,14 @@ function ProjectCard({ project, onEdit, onArchive, onDelete }: {
 }
 
 type DateFilter = 'all' | 'current_month' | 'last_3_months' | 'current_year';
+type ArchiveFilter = 'active' | 'archived' | 'all';
 
 export default function ProjectsScreen() {
   const router = useRouter();
   const { projects, projectsLoading, updateProject, deleteProject, currentUser } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>('active');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState('');
@@ -198,6 +200,12 @@ export default function ProjectsScreen() {
   const filteredProjects = useMemo(() => {
     let filtered = [...projects];
 
+    if (archiveFilter === 'active') {
+      filtered = filtered.filter(p => !p.archived_at);
+    } else if (archiveFilter === 'archived') {
+      filtered = filtered.filter(p => !!p.archived_at);
+    }
+
     filtered.sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
@@ -235,7 +243,7 @@ export default function ProjectsScreen() {
     }
 
     return filtered;
-  }, [projects, searchQuery, dateFilter]);
+  }, [projects, searchQuery, dateFilter, archiveFilter]);
 
   if (projectsLoading) {
     return (
@@ -277,7 +285,7 @@ export default function ProjectsScreen() {
           onPress={() => setShowFilterModal(true)}
           activeOpacity={0.7}
         >
-          <Filter size={20} color={dateFilter !== 'all' ? colors.primary : colors.textSecondary} />
+          <Filter size={20} color={dateFilter !== 'all' || archiveFilter !== 'active' ? colors.primary : colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -293,7 +301,70 @@ export default function ProjectsScreen() {
           onPress={() => setShowFilterModal(false)}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Filtrare după dată</Text>
+            <Text style={styles.modalTitle}>Filtrare</Text>
+            
+            <Text style={styles.filterSectionTitle}>Status arhivare</Text>
+            
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                archiveFilter === 'active' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setArchiveFilter('active');
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  archiveFilter === 'active' && styles.filterOptionTextActive,
+                ]}
+              >
+                Doar active
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                archiveFilter === 'archived' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setArchiveFilter('archived');
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  archiveFilter === 'archived' && styles.filterOptionTextActive,
+                ]}
+              >
+                Doar arhivate
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                archiveFilter === 'all' && styles.filterOptionActive,
+              ]}
+              onPress={() => {
+                setArchiveFilter('all');
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  archiveFilter === 'all' && styles.filterOptionTextActive,
+                ]}
+              >
+                Toate
+              </Text>
+            </TouchableOpacity>
+            
+            <View style={styles.filterDivider} />
+            
+            <Text style={styles.filterSectionTitle}>Perioadă</Text>
             
             <TouchableOpacity
               style={[
@@ -302,7 +373,6 @@ export default function ProjectsScreen() {
               ]}
               onPress={() => {
                 setDateFilter('current_month');
-                setShowFilterModal(false);
               }}
             >
               <Text
@@ -322,7 +392,6 @@ export default function ProjectsScreen() {
               ]}
               onPress={() => {
                 setDateFilter('last_3_months');
-                setShowFilterModal(false);
               }}
             >
               <Text
@@ -342,7 +411,6 @@ export default function ProjectsScreen() {
               ]}
               onPress={() => {
                 setDateFilter('current_year');
-                setShowFilterModal(false);
               }}
             >
               <Text
@@ -362,7 +430,6 @@ export default function ProjectsScreen() {
               ]}
               onPress={() => {
                 setDateFilter('all');
-                setShowFilterModal(false);
               }}
             >
               <Text
@@ -371,9 +438,18 @@ export default function ProjectsScreen() {
                   dateFilter === 'all' && styles.filterOptionTextActive,
                 ]}
               >
-                Toate
+                Toate perioadele
               </Text>
             </TouchableOpacity>
+            
+            <View style={styles.filterModalButtons}>
+              <TouchableOpacity
+                style={[styles.filterModalButton, styles.filterModalButtonApply]}
+                onPress={() => setShowFilterModal(false)}
+              >
+                <Text style={styles.filterModalButtonTextApply}>Aplică</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -598,6 +674,34 @@ const styles = StyleSheet.create({
   filterOptionTextActive: {
     color: '#FFFFFF',
     fontWeight: '600' as const,
+  },
+  filterSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  filterDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 12,
+  },
+  filterModalButtons: {
+    marginTop: 16,
+  },
+  filterModalButton: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  filterModalButtonApply: {
+    backgroundColor: colors.primary,
+  },
+  filterModalButtonTextApply: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
   menuOverlay: {
     flex: 1,

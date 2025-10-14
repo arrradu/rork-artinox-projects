@@ -45,6 +45,7 @@ export interface Project {
   paid_eur?: number;
   remaining_eur?: number;
   access: Record<Department, boolean>;
+  archived_at?: string;
 }
 
 export interface Contract {
@@ -139,6 +140,7 @@ export interface UpdateProjectInput {
   name?: string;
   status?: ProjectStatus;
   access?: Partial<Record<Department, boolean>>;
+  archived_at?: string;
 }
 
 export interface UpdateContractInput {
