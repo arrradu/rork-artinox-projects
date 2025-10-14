@@ -321,19 +321,9 @@ export function useTasksByProjectId(projectId: string | undefined) {
   return useMemo(() => tasks.filter(t => t.project_id === projectId), [tasks, projectId]);
 }
 
-export function useTasksByContractId(contractId: string | undefined) {
-  const { tasks } = useApp();
-  return useMemo(() => tasks.filter(t => t.contract_id === contractId), [tasks, contractId]);
-}
-
 export function usePaymentsByProjectId(projectId: string | undefined) {
   const { payments } = useApp();
   return useMemo(() => payments.filter(p => p.project_id === projectId), [payments, projectId]);
-}
-
-export function usePaymentsByContractId(contractId: string | undefined) {
-  const { payments } = useApp();
-  return useMemo(() => payments.filter(p => p.contract_id === contractId), [payments, contractId]);
 }
 
 export function useMyTasks() {
@@ -346,36 +336,11 @@ export function useProjectFinancials(projectId: string | undefined) {
   
   return useMemo(() => {
     const total = payments.reduce((sum, p) => sum + p.amount, 0);
-    const paid = payments.reduce((sum, p) => {
-      if (p.status === 'platit') return sum + p.amount;
-      if (p.status === 'partial') return sum + (p.paid_amount || 0);
-      return sum;
-    }, 0);
+    const paid = payments.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
     const remaining = total - paid;
     
     return { total, paid, remaining };
   }, [payments]);
-}
-
-export function useContractFinancials(contractId: string | undefined) {
-  const payments = usePaymentsByContractId(contractId);
-  
-  return useMemo(() => {
-    const total = payments.reduce((sum, p) => sum + p.amount, 0);
-    const paid = payments.reduce((sum, p) => {
-      if (p.status === 'platit') return sum + p.amount;
-      if (p.status === 'partial') return sum + (p.paid_amount || 0);
-      return sum;
-    }, 0);
-    const remaining = total - paid;
-    
-    return { total, paid, remaining };
-  }, [payments]);
-}
-
-export function useContractsByProjectId(projectId: string | undefined) {
-  const { contracts } = useApp();
-  return useMemo(() => contracts.filter(c => c.project_id === projectId), [contracts, projectId]);
 }
 
 export function useFilesByProjectId(projectId: string | undefined) {
@@ -385,25 +350,11 @@ export function useFilesByProjectId(projectId: string | undefined) {
   ), [files, projectId]);
 }
 
-export function useFilesByContractId(contractId: string | undefined) {
-  const { files } = useApp();
-  return useMemo(() => files.filter(f => f.contract_id === contractId).sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ), [files, contractId]);
-}
-
 export function useChatMessagesByProjectId(projectId: string | undefined) {
   const { chatMessages } = useApp();
   return useMemo(() => chatMessages.filter(m => m.project_id === projectId).sort((a, b) => 
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   ), [chatMessages, projectId]);
-}
-
-export function useChatMessagesByContractId(contractId: string | undefined) {
-  const { chatMessages } = useApp();
-  return useMemo(() => chatMessages.filter(m => m.contract_id === contractId).sort((a, b) => 
-    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  ), [chatMessages, contractId]);
 }
 
 export function useUserById(userId: string | undefined) {

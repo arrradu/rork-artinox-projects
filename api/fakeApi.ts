@@ -149,19 +149,6 @@ let contracts: Contract[] = [
     created_by: 'Maria Popescu',
     created_at: '2024-12-10T09:00:00Z',
   },
-  {
-    id: '4',
-    project_id: '3',
-    title: 'Mobilier Sală Restaurant',
-    code: 'CNT-2024-090',
-    value_eur: 18000,
-    paid_eur: 9000,
-    remaining_eur: 9000,
-    status: 'in_lucru',
-    start_date: '2024-12-15T00:00:00Z',
-    created_by: 'Maria Popescu',
-    created_at: '2024-12-15T10:00:00Z',
-  },
 ];
 
 let tasks: Task[] = [
