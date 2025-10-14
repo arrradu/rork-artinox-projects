@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Alert,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Search, Plus, FolderOpen, Filter } from 'lucide-react-native';
+import { Search, Plus, FolderOpen, Filter, MoreVertical, Edit2, Archive, Trash2 } from 'lucide-react-native';
 import { useApp } from '@/contexts/AppContext';
 import TagStatus from '@/components/TagStatus';
 import Money from '@/components/Money';
@@ -18,15 +19,23 @@ import EmptyState from '@/components/EmptyState';
 import colors from '@/constants/colors';
 import type { Project } from '@/types';
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, onEdit, onArchive, onDelete }: { 
+  project: Project;
+  onEdit: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
   const router = useRouter();
-  const { clients, contracts } = useApp();
+  const { clients, contracts, currentUser } = useApp();
+  const [showMenu, setShowMenu] = useState(false);
   const client = useMemo(() => clients.find(c => c.id === project.client_id), [clients, project.client_id]);
   const projectContracts = useMemo(() => contracts.filter(c => c.project_id === project.id), [contracts, project.id]);
   
   const totalRemaining = useMemo(() => {
     return projectContracts.reduce((sum, c) => sum + c.remaining_eur, 0);
   }, [projectContracts]);
+
+  const isAdmin = currentUser.role === 'admin';
 
   return (
     <TouchableOpacity
@@ -38,7 +47,18 @@ function ProjectCard({ project }: { project: Project }) {
         <Text style={styles.cardTitle} numberOfLines={1}>
           {project.name}
         </Text>
-        <TagStatus type="project" status={project.status} size="small" />
+        <View style={styles.cardHeaderRight}>
+          <TagStatus type="project" status={project.status} size="small" />
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={() => setShowMenu(true)}
+              style={styles.menuButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MoreVertical size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <Text style={styles.cardClient} numberOfLines={1}>
@@ -51,6 +71,54 @@ function ProjectCard({ project }: { project: Project }) {
           <Money amount={totalRemaining} size="small" color={colors.primary} />
         </View>
       )}
+
+      <Modal
+        visible={showMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.menuContent}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                onEdit();
+              }}
+            >
+              <Edit2 size={20} color={colors.text} />
+              <Text style={styles.menuItemText}>Editează</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                onArchive();
+              }}
+            >
+              <Archive size={20} color={colors.warning} />
+              <Text style={[styles.menuItemText, { color: colors.warning }]}>Arhivează</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                onDelete();
+              }}
+            >
+              <Trash2 size={20} color={colors.error} />
+              <Text style={[styles.menuItemText, { color: colors.error }]}>Șterge</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </TouchableOpacity>
   );
 }
@@ -59,10 +127,73 @@ type DateFilter = 'all' | 'current_month' | 'last_3_months' | 'current_year';
 
 export default function ProjectsScreen() {
   const router = useRouter();
-  const { projects, projectsLoading } = useApp();
+  const { projects, projectsLoading, updateProject, deleteProject, currentUser } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+
+  const isAdmin = currentUser.role === 'admin';
+
+  const handleEdit = (project: Project) => {
+    setEditingProject(project);
+    setEditName(project.name);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProject || !editName.trim()) return;
+    
+    try {
+      await updateProject(editingProject.id, { name: editName.trim() });
+      setEditingProject(null);
+      setEditName('');
+    } catch (error) {
+      Alert.alert('Eroare', 'Nu s-a putut actualiza proiectul');
+    }
+  };
+
+  const handleArchive = (project: Project) => {
+    Alert.alert(
+      'Arhivează proiect',
+      `Sigur vrei să arhivezi proiectul "${project.name}"?`,
+      [
+        { text: 'Anulează', style: 'cancel' },
+        {
+          text: 'Arhivează',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await updateProject(project.id, { status: 'anulat' });
+            } catch (error) {
+              Alert.alert('Eroare', 'Nu s-a putut arhiva proiectul');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDelete = (project: Project) => {
+    Alert.alert(
+      'Șterge proiect',
+      `Sigur vrei să ștergi definitiv proiectul "${project.name}"? Această acțiune nu poate fi anulată.`,
+      [
+        { text: 'Anulează', style: 'cancel' },
+        {
+          text: 'Șterge',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProject(project.id);
+            } catch (error) {
+              Alert.alert('Eroare', 'Nu s-a putut șterge proiectul');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const filteredProjects = useMemo(() => {
     let filtered = [...projects];
@@ -119,14 +250,14 @@ export default function ProjectsScreen() {
       <Stack.Screen
         options={{
           title: 'Proiecte',
-          headerRight: () => (
+          headerRight: () => isAdmin ? (
             <TouchableOpacity
               onPress={() => router.push('/create-project' as any)}
               style={styles.headerButton}
             >
               <Plus size={24} color={colors.primary} />
             </TouchableOpacity>
-          ),
+          ) : null,
         }}
       />
 
@@ -261,11 +392,62 @@ export default function ProjectsScreen() {
         <FlatList
           data={filteredProjects}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ProjectCard project={item} />}
+          renderItem={({ item }) => (
+            <ProjectCard 
+              project={item}
+              onEdit={() => handleEdit(item)}
+              onArchive={() => handleArchive(item)}
+              onDelete={() => handleDelete(item)}
+            />
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <Modal
+        visible={editingProject !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingProject(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setEditingProject(null)}
+        >
+          <View style={styles.editModalContent}>
+            <Text style={styles.modalTitle}>Editează proiect</Text>
+            
+            <Text style={styles.inputLabel}>Nume proiect</Text>
+            <TextInput
+              style={styles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Nume proiect"
+              placeholderTextColor={colors.textTertiary}
+              autoFocus
+            />
+
+            <View style={styles.editModalButtons}>
+              <TouchableOpacity
+                style={[styles.editModalButton, styles.editModalButtonCancel]}
+                onPress={() => setEditingProject(null)}
+              >
+                <Text style={styles.editModalButtonTextCancel}>Anulează</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.editModalButton, styles.editModalButtonSave]}
+                onPress={handleSaveEdit}
+                disabled={!editName.trim()}
+              >
+                <Text style={styles.editModalButtonTextSave}>Salvează</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -346,6 +528,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 12,
   },
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  menuButton: {
+    padding: 4,
+  },
   cardTitle: {
     flex: 1,
     fontSize: 17,
@@ -408,5 +598,89 @@ const styles = StyleSheet.create({
   filterOptionTextActive: {
     color: '#FFFFFF',
     fontWeight: '600' as const,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  menuContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 8,
+    width: '100%',
+    maxWidth: 280,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+    borderRadius: 10,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500' as const,
+  },
+  editModalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  editModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  editModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  editModalButtonCancel: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  editModalButtonSave: {
+    backgroundColor: colors.primary,
+  },
+  editModalButtonTextCancel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.text,
+  },
+  editModalButtonTextSave: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
   },
 });
