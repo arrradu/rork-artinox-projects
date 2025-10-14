@@ -79,6 +79,7 @@ export default function TasksTab({ projectId }: TasksTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle] = useState('');
   const [assignee, setAssignee] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -192,23 +193,35 @@ export default function TasksTab({ projectId }: TasksTabProps) {
                 <TextInput
                   style={styles.input}
                   value={assignee}
-                  onChangeText={setAssignee}
-                  placeholder="Nume responsabil"
+                  onChangeText={(text) => {
+                    setAssignee(text);
+                    setShowSuggestions(text.length > 0);
+                  }}
+                  onFocus={() => setShowSuggestions(assignee.length > 0)}
+                  placeholder="Începe să scrii numele..."
                   placeholderTextColor={colors.textSecondary}
                 />
-                {users.length > 0 && (
-                  <View style={styles.suggestionsContainer}>
-                    {users.slice(0, 5).map((user) => (
-                      <TouchableOpacity
-                        key={user.id}
-                        style={styles.suggestionItem}
-                        onPress={() => setAssignee(user.name)}
-                      >
-                        <Text style={styles.suggestionText}>{user.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+                {showSuggestions && assignee.length > 0 && (() => {
+                  const filtered = users.filter(user => 
+                    user.name.toLowerCase().includes(assignee.toLowerCase())
+                  );
+                  return filtered.length > 0 ? (
+                    <View style={styles.suggestionsContainer}>
+                      {filtered.slice(0, 5).map((user) => (
+                        <TouchableOpacity
+                          key={user.id}
+                          style={styles.suggestionItem}
+                          onPress={() => {
+                            setAssignee(user.name);
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          <Text style={styles.suggestionText}>{user.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : null;
+                })()}
               </View>
 
               <View style={styles.formGroup}>
