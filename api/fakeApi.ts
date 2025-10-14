@@ -357,6 +357,53 @@ let chatMessages: ChatMessage[] = [
     text: 'Clientul a confirmat data livrării pentru 10 ianuarie.',
     created_at: '2025-01-08T11:00:00Z',
   },
+  {
+    id: '5',
+    contract_id: '1',
+    author_id: '1',
+    author_name: 'Andrei Ionescu',
+    text: 'Iată pozele de la fața locului:',
+    attachments: [
+      {
+        id: 'att1',
+        message_id: '5',
+        name: 'Scara_interior.jpg',
+        url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+        mime_type: 'image/jpeg',
+        size_bytes: 856000,
+        created_at: '2025-01-11T16:25:00Z',
+      },
+      {
+        id: 'att2',
+        message_id: '5',
+        name: 'Detaliu_balustrada.jpg',
+        url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+        mime_type: 'image/jpeg',
+        size_bytes: 742000,
+        created_at: '2025-01-11T16:25:00Z',
+      },
+    ],
+    created_at: '2025-01-11T16:25:00Z',
+  },
+  {
+    id: '6',
+    contract_id: '1',
+    author_id: '2',
+    author_name: 'Maria Popescu',
+    text: 'Am atașat desenul tehnic actualizat.',
+    attachments: [
+      {
+        id: 'att3',
+        message_id: '6',
+        name: 'Desen_tehnic_v2.pdf',
+        url: 'https://example.com/files/desen-v2.pdf',
+        mime_type: 'application/pdf',
+        size_bytes: 1245000,
+        created_at: '2025-01-12T09:00:00Z',
+      },
+    ],
+    created_at: '2025-01-12T09:00:00Z',
+  },
 ];
 
 let users: User[] = [
