@@ -178,6 +178,13 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <Text style={styles.infoValue}>{contractsCount}</Text>
           </View>
 
+          {project.start_date && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Dată început</Text>
+              <Text style={styles.infoValue}>{formatDateToDisplay(project.start_date)}</Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.infoRow}>
@@ -194,6 +201,16 @@ export default function OverviewTab({ project }: OverviewTabProps) {
             <Text style={styles.infoLabel}>Rest de încasat</Text>
             <Money amount={remaining} size="medium" color={colors.primary} />
           </View>
+
+          {project.comment && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.commentSection}>
+                <Text style={styles.infoLabel}>Comentariu</Text>
+                <Text style={styles.commentText}>{project.comment}</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -579,5 +596,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: '#FFFFFF',
+  },
+  commentSection: {
+    gap: 8,
+  },
+  commentText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
   },
 });

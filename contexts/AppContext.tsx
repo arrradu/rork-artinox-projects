@@ -13,7 +13,8 @@ import type {
   CreateFileInput,
   CreateChatMessageInput,
   User,
-  CreateProjectMemberInput
+  CreateProjectMemberInput,
+  CreateClientInput
 } from '@/types';
 
 export const [AppContext, useApp] = createContextHook(() => {
@@ -179,6 +180,13 @@ export const [AppContext, useApp] = createContextHook(() => {
     },
   });
 
+  const createClientMutation = useMutation({
+    mutationFn: (input: CreateClientInput) => fakeApi.clients.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+
   const toggleDepartmentAccess = useCallback(async (projectId: string, department: Department) => {
     const project = projectsQuery.data?.find(p => p.id === projectId);
     if (!project) return;
@@ -262,6 +270,8 @@ export const [AppContext, useApp] = createContextHook(() => {
     createProjectMember: createProjectMemberMutation.mutateAsync,
     deleteProjectMember: deleteProjectMemberMutation.mutateAsync,
     
+    createClient: createClientMutation.mutateAsync,
+    
     toggleDepartmentAccess,
   }), [
     currentUser,
@@ -307,6 +317,7 @@ export const [AppContext, useApp] = createContextHook(() => {
     deleteChatMessageMutation.mutateAsync,
     createProjectMemberMutation.mutateAsync,
     deleteProjectMemberMutation.mutateAsync,
+    createClientMutation.mutateAsync,
     toggleDepartmentAccess,
   ]);
 });

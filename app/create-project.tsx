@@ -20,7 +20,7 @@ import { X, Plus, ChevronDown } from 'lucide-react-native';
 
 export default function CreateProjectScreen() {
   const router = useRouter();
-  const { createProject, clients } = useApp();
+  const { createProject, createClient, clients } = useApp();
 
   const [name, setName] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -30,8 +30,13 @@ export default function CreateProjectScreen() {
   const [newClientName, setNewClientName] = useState('');
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
+  const [newClientAddress, setNewClientAddress] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('nou');
+  const [startDate, setStartDate] = useState('');
+  const [comment, setComment] = useState('');
+  const [totalValue, setTotalValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
 
   const filteredClients = useMemo(() => {
     if (!clientSearch.trim()) return clients;
@@ -64,6 +69,37 @@ export default function CreateProjectScreen() {
     return true;
   };
 
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) {
+      Alert.alert('Eroare', 'Numele clientului este obligatoriu');
+      return;
+    }
+
+    setIsCreatingClient(true);
+
+    try {
+      const client = await createClient({
+        name: newClientName.trim(),
+        email: newClientEmail.trim() || undefined,
+        phone: newClientPhone.trim() || undefined,
+        address: newClientAddress.trim() || undefined,
+      });
+
+      setSelectedClient(client);
+      setShowNewClientModal(false);
+      setNewClientName('');
+      setNewClientEmail('');
+      setNewClientPhone('');
+      setNewClientAddress('');
+      Alert.alert('Succes', 'Clientul a fost creat');
+    } catch (error) {
+      console.error('Error creating client:', error);
+      Alert.alert('Eroare', 'Nu s-a putut crea clientul');
+    } finally {
+      setIsCreatingClient(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -74,6 +110,9 @@ export default function CreateProjectScreen() {
         client_id: selectedClient!.id,
         name: name.trim(),
         status,
+        start_date: startDate.trim() || undefined,
+        comment: comment.trim() || undefined,
+        total_value_eur: totalValue.trim() ? parseFloat(totalValue) : undefined,
       });
 
       router.replace(`/project/${project.id}` as any);
@@ -153,6 +192,43 @@ export default function CreateProjectScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Valoare totală estimată (EUR)</Text>
+            <TextInput
+              style={styles.input}
+              value={totalValue}
+              onChangeText={setTotalValue}
+              placeholder="ex: 15000"
+              placeholderTextColor={colors.textTertiary}
+              keyboardType="decimal-pad"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Dată început (DD-MM-YYYY)</Text>
+            <TextInput
+              style={styles.input}
+              value={startDate}
+              onChangeText={setStartDate}
+              placeholder="ex: 15-01-2025"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Comentariu (opțional)</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={comment}
+              onChangeText={setComment}
+              placeholder="Detalii suplimentare despre proiect..."
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
           </View>
         </View>
       </ScrollView>
@@ -279,16 +355,25 @@ export default function CreateProjectScreen() {
                 />
               </View>
 
+              <View style={styles.field}>
+                <Text style={styles.label}>Adresă</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newClientAddress}
+                  onChangeText={setNewClientAddress}
+                  placeholder="Str. Principală nr. 10, București"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+
               <TouchableOpacity
-                style={[styles.submitButton, !newClientName.trim() && styles.submitButtonDisabled]}
-                onPress={() => {
-                  if (!newClientName.trim()) return;
-                  Alert.alert('Info', 'Funcționalitatea de creare client va fi implementată');
-                  setShowNewClientModal(false);
-                }}
-                disabled={!newClientName.trim()}
+                style={[styles.submitButton, (!newClientName.trim() || isCreatingClient) && styles.submitButtonDisabled]}
+                onPress={handleCreateClient}
+                disabled={!newClientName.trim() || isCreatingClient}
               >
-                <Text style={styles.submitButtonText}>Creează client</Text>
+                <Text style={styles.submitButtonText}>
+                  {isCreatingClient ? 'Se creează...' : 'Creează client'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -514,5 +599,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: colors.surface,
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 12,
   },
 });

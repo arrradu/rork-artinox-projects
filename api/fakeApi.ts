@@ -845,6 +845,9 @@ export const fakeApi = {
         status: input.status || 'nou',
         created_by: currentUser,
         created_at: new Date().toISOString(),
+        start_date: input.start_date,
+        comment: input.comment,
+        total_value_eur: input.total_value_eur,
         access: defaultAccess,
       };
       

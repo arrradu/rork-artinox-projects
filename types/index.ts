@@ -41,6 +41,8 @@ export interface Project {
   status: ProjectStatus;
   created_by: string;
   created_at: string;
+  start_date?: string;
+  comment?: string;
   total_value_eur?: number;
   paid_eur?: number;
   remaining_eur?: number;
@@ -106,6 +108,7 @@ export interface CreateProjectInput {
   status?: ProjectStatus;
   start_date?: string;
   comment?: string;
+  total_value_eur?: number;
 }
 
 export interface CreateContractInput {
