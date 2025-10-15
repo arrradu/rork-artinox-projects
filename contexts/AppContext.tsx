@@ -343,15 +343,16 @@ export function useMyTasks() {
 }
 
 export function useProjectFinancials(projectId: string | undefined) {
-  const payments = usePaymentsByProjectId(projectId);
+  const { contracts } = useApp();
   
   return useMemo(() => {
-    const total = payments.reduce((sum, p) => sum + p.amount, 0);
-    const paid = payments.reduce((sum, p) => sum + (p.paid_amount || 0), 0);
-    const remaining = total - paid;
+    const projectContracts = contracts.filter(c => c.project_id === projectId);
+    const total = projectContracts.reduce((sum, c) => sum + c.value_eur, 0);
+    const paid = projectContracts.reduce((sum, c) => sum + c.paid_eur, 0);
+    const remaining = projectContracts.reduce((sum, c) => sum + c.remaining_eur, 0);
     
     return { total, paid, remaining };
-  }, [payments]);
+  }, [contracts, projectId]);
 }
 
 export function useFilesByProjectId(projectId: string | undefined) {
