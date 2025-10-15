@@ -258,14 +258,6 @@ export default function ProjectsScreen() {
       <Stack.Screen
         options={{
           title: 'Proiecte',
-          headerRight: () => isAdmin ? (
-            <TouchableOpacity
-              onPress={() => router.push('/create-project' as any)}
-              style={styles.headerButton}
-            >
-              <Plus size={24} color={colors.primary} />
-            </TouchableOpacity>
-          ) : null,
         }}
       />
 
@@ -524,6 +516,16 @@ export default function ProjectsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/create-project' as any)}
+          activeOpacity={0.8}
+        >
+          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -539,9 +541,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.background,
   },
-  headerButton: {
-    padding: 8,
-    marginRight: 8,
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   searchRow: {
     flexDirection: 'row',
