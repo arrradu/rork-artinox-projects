@@ -14,7 +14,9 @@ import type {
   CreateChatMessageInput,
   User,
   CreateProjectMemberInput,
-  CreateClientInput
+  CreateClientInput,
+  CreateUserInput,
+  UpdateUserInput
 } from '@/types';
 
 export const [AppContext, useApp] = createContextHook(() => {
@@ -187,6 +189,28 @@ export const [AppContext, useApp] = createContextHook(() => {
     },
   });
 
+  const createUserMutation = useMutation({
+    mutationFn: (input: CreateUserInput) => fakeApi.users.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) => 
+      fakeApi.users.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) => fakeApi.users.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
   const toggleDepartmentAccess = useCallback(async (projectId: string, department: Department) => {
     const project = projectsQuery.data?.find(p => p.id === projectId);
     if (!project) return;
@@ -209,6 +233,9 @@ export const [AppContext, useApp] = createContextHook(() => {
 
   const updatePayment = useCallback((id: string, input: UpdatePaymentInput) => 
     updatePaymentMutation.mutateAsync({ id, input }), [updatePaymentMutation.mutateAsync]);
+
+  const updateUser = useCallback((id: string, input: UpdateUserInput) => 
+    updateUserMutation.mutateAsync({ id, input }), [updateUserMutation.mutateAsync]);
 
   return useMemo(() => ({
     currentUser,
@@ -272,6 +299,10 @@ export const [AppContext, useApp] = createContextHook(() => {
     
     createClient: createClientMutation.mutateAsync,
     
+    createUser: createUserMutation.mutateAsync,
+    updateUser,
+    deleteUser: deleteUserMutation.mutateAsync,
+    
     toggleDepartmentAccess,
   }), [
     currentUser,
@@ -318,6 +349,9 @@ export const [AppContext, useApp] = createContextHook(() => {
     createProjectMemberMutation.mutateAsync,
     deleteProjectMemberMutation.mutateAsync,
     createClientMutation.mutateAsync,
+    createUserMutation.mutateAsync,
+    updateUser,
+    deleteUserMutation.mutateAsync,
     toggleDepartmentAccess,
   ]);
 });

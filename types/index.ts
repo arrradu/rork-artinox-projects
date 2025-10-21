@@ -300,3 +300,17 @@ export interface CreateProjectMemberInput {
   user_id: string;
   role?: string;
 }
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  role: UserRole;
+  department: Department;
+}
+
+export interface UpdateUserInput {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  department?: Department;
+}

@@ -24,7 +24,9 @@ import type {
   ProjectMember,
   CreateProjectMemberInput,
   Client,
-  CreateClientInput
+  CreateClientInput,
+  CreateUserInput,
+  UpdateUserInput
 } from '@/types';
 
 let clients: Client[] = [
@@ -585,6 +587,43 @@ export const fakeApi = {
     getByDepartment: async (department: Department): Promise<User[]> => {
       await new Promise(resolve => setTimeout(resolve, 50));
       return users.filter(u => u.department === department);
+    },
+    
+    create: async (input: CreateUserInput): Promise<User> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const newUser: User = {
+        id: generateId(),
+        name: input.name,
+        email: input.email,
+        role: input.role,
+        department: input.department,
+      };
+      
+      users = [...users, newUser];
+      return newUser;
+    },
+    
+    update: async (id: string, input: UpdateUserInput): Promise<User | undefined> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const index = users.findIndex(u => u.id === id);
+      if (index === -1) return undefined;
+      
+      const updated: User = {
+        ...users[index],
+        ...input,
+      };
+      
+      users[index] = updated;
+      return updated;
+    },
+    
+    delete: async (id: string): Promise<boolean> => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const initialLength = users.length;
+      users = users.filter(u => u.id !== id);
+      return users.length < initialLength;
     },
   },
   
