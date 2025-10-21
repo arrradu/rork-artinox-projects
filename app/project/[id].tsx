@@ -39,7 +39,7 @@ export default function ProjectDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: project.title,
+          title: project.name,
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.back()}
