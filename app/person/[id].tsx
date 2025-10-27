@@ -55,7 +55,7 @@ function TaskItem({ task, project, onStatusChange }: TaskItemProps) {
 
       {project && (
         <Text style={styles.taskProject} numberOfLines={1}>
-          {project.title}
+          {project.name}
         </Text>
       )}
 
@@ -88,6 +88,9 @@ interface ProjectCardProps {
 }
 
 function ProjectCard({ project, onPress }: ProjectCardProps) {
+  const { clients } = useApp();
+  const client = clients.find(c => c.id === project.client_id);
+
   return (
     <TouchableOpacity
       style={styles.projectCard}
@@ -96,12 +99,12 @@ function ProjectCard({ project, onPress }: ProjectCardProps) {
     >
       <View style={styles.projectHeader}>
         <Text style={styles.projectTitle} numberOfLines={2}>
-          {project.title}
+          {project.name}
         </Text>
         <TagStatus type="project" status={project.status} size="small" />
       </View>
       <Text style={styles.projectClient} numberOfLines={1}>
-        {project.client_name}
+        {client?.name || 'N/A'}
       </Text>
     </TouchableOpacity>
   );
